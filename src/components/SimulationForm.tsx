@@ -65,9 +65,9 @@ export function SimulationForm({ input, onChange }: SimulationFormProps) {
 
   return (
     <section className="panel form-panel">
-      <h2>Parametres de simulation</h2>
+      <h2>Paramètres de simulation</h2>
       <p className="panel-subtitle">
-        Tous les calculs sont annuels et affiches en euros constants.
+        Tous les calculs sont annuels et affichés en euros constants.
       </p>
 
       <div className="form-groups">

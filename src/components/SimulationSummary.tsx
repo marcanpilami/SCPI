@@ -19,7 +19,7 @@ export function SimulationSummary({ summary }: SimulationSummaryProps) {
       </article>
       <article className="summary-card">
         <h3>Valeur finale des actifs</h3>
-        <p>{formatEuro(summary.finalAssetValue)}</p>
+        <p>{formatEuro(summary.finalFixedAssetsValue)}</p>
         <span className="subcell">en fin de simulation</span>
       </article>
       <article className="summary-card">

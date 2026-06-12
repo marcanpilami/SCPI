@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { LoanModeComparison } from './components/LoanModeComparison'
 import { ScenarioComparison } from './components/ScenarioComparison'
+import { ProjectionChart } from './components/ProjectionChart'
 import { SimulationForm } from './components/SimulationForm'
 import { SimulationSummary } from './components/SimulationSummary'
 import { YearlyResultsTable } from './components/YearlyResultsTable'
@@ -81,11 +82,10 @@ function App() {
   return (
     <main className="app-shell">
       <header className="hero">
-        <p className="kicker">Simulateur statique React + Vite</p>
-        <h1>Rentabilite d&apos;un investissement SCPI en France</h1>
+        <p className="kicker">Simulateur</p>
+        <h1>Rentabilité d&apos;un investissement SCPI en France</h1>
         <p className="hero-text">
-          Projection annuelle incluant remboursement bancaire, effort d&apos;epargne,
-          fiscalite, valorisation des actifs et resultat global.
+          Projection annuelle incluant remboursement bancaire, effort d&apos;épargne, fiscalité, valorisation des actifs et résultat global.
         </p>
       </header>
 
@@ -114,6 +114,9 @@ function App() {
                 L&apos;investissement en SCPI présente des risques, notamment de perte en
                 capital, d&apos;illiquidité et de variation des revenus distribués.
               </li>
+              <li>
+                L'inflation n'est pas considérée dans les calculs, et les montants sont exprimés en euros constants. L'inflation peut affecter très fortement les calculs de rentabilité sur plusieurs décennies, et peut varier significativement d'une période à l'autre.
+              </li>
             </ul>
           </div>
           <button
@@ -140,6 +143,7 @@ function App() {
         onUpdateScenario={handleUpdateScenario}
         onRemoveScenario={handleRemoveScenario}
       />
+      <ProjectionChart rows={simulation.yearlyResults} />
       <YearlyResultsTable
         rows={simulation.yearlyResults}
         showDetailed={showDetailed}

@@ -123,9 +123,9 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
     : Array.from({ length: input.horizonYears }, (_, i) => emptyLoanBreakdown(i + 1))
 
   let assetValueStartOfYear = input.investmentAmount * (1 - input.subscriptionFeeRate)
-  let cumulativeOutOfPocket = initialOutOfPocket
-  let cumulativeProfit = 0
   let rentComputationBase = input.investmentAmount;
+  let endOfyearCapital = initialOutOfPocket
+  let cashValuation = 0;
 
   const yearlyResults: YearlyResult[] = []
 
@@ -158,20 +158,24 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
     const bankReimbursementTotal = loan.capitalPaid + loan.interestPaid
     const effortAmount = bankReimbursementTotal - (grossRents - taxesPaid)
 
-    cumulativeOutOfPocket += Math.max(0, effortAmount)
-    cumulativeProfit -= Math.min(0, effortAmount)
+    endOfyearCapital += Math.max(0, effortAmount)
+    
+    const annualYield = endOfyearCapital > 0
+    ? - effortAmount / endOfyearCapital
+    : 0
 
-    const annualYield = cumulativeOutOfPocket > 0
-      ? - effortAmount / cumulativeOutOfPocket
-      : 0
+    cashValuation += grossRents - taxesPaid - bankReimbursementTotal + Math.max(0, effortAmount);
+    const endOfYearCashValuation = cashValuation;
 
-    const assetValueEndOfYear =
+    const endOfYearFixedAssetsValuation =
       assetValueStartOfYear * (1 + input.annualRevaluationRate)
-    const globalProfitLoss =
-      assetValueEndOfYear -
-      cumulativeOutOfPocket -
+    
+    const endOfYearValuation =
+      endOfYearFixedAssetsValuation -
       loan.remainingCapital +
-      cumulativeProfit;
+      endOfYearCashValuation;
+
+    const endofYearLatentProfit = endOfYearValuation - endOfyearCapital
 
     rentComputationBase *= (1 + input.annualRevaluationRate)
 
@@ -190,42 +194,54 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
       loanRemainingCapital: loan.remainingCapital,
       taxesPaid,
       effortAmount,
-      assetValueEnd: assetValueEndOfYear,
-      globalProfitLoss,
-      cumulativeOutOfPocket,
-      cumulativeProfit,
+      endOfYearFixedAssetsValuation,
+      endOfYearCashValuation,
+      endOfYearValuation,
+      endOfyearCapital,
+      endofYearLatentProfit,
     });
 
-    assetValueStartOfYear = assetValueEndOfYear
+    assetValueStartOfYear = endOfYearFixedAssetsValuation
   }
 
   const summary = yearlyResults.reduce(
     (acc, row) => {
-      acc.totalRents += row.grossRents
-      acc.totalBankReimbursement += row.bankReimbursementTotal
-      acc.totalTaxes += row.taxesPaid
-      acc.totalEffort += Math.max(0, row.effortAmount)
-      acc.totalFees += row.bankInterestPaid
-      return acc
+      acc.totalRents += row.grossRents;
+      acc.totalBankReimbursement += row.bankReimbursementTotal;
+      acc.totalTaxes += row.taxesPaid;
+      acc.totalFees += row.bankInterestPaid;
+      return acc;
     },
     {
-      initialAssetValue: input.investmentAmount * (1 - input.subscriptionFeeRate),
+      initialAssetValue:
+        input.investmentAmount * (1 - input.subscriptionFeeRate),
       totalBorrowedAmount: loanPrincipal,
+      // Accumulated fields
       totalFees: input.otherInitialExpenses,
       annualIncomeAfterLoan: 0,
       totalRents: 0,
       totalBankReimbursement: 0,
       totalTaxes: 0,
-      totalEffort: 0,
-      totalOutOfPocket: initialOutOfPocket,
-      finalAssetValue: yearlyResults[yearlyResults.length - 1]?.assetValueEnd ?? 0,
-      finalProfitLoss: yearlyResults[yearlyResults.length - 1]?.globalProfitLoss ?? 0,
+      // Final fields
+      totalOutOfPocket:
+        yearlyResults[yearlyResults.length - 1]?.endOfyearCapital ?? 0,
+      finalFixedAssetsValue:
+        yearlyResults[yearlyResults.length - 1]
+          ?.endOfYearFixedAssetsValuation ?? 0,
+      finalCashValue:
+        yearlyResults[yearlyResults.length - 1]?.endOfYearCashValuation ?? 0,
+      finalValuation:
+        yearlyResults[yearlyResults.length - 1]?.endOfYearValuation ?? 0,
+      finalLatentProfit:
+        yearlyResults[yearlyResults.length - 1]?.endofYearLatentProfit ?? 0,
+      // Fields computed later
+      finalCapitalLatentGain: 0,
       leverageRatio: 0,
+      yieldAtEndOfSimulation: 0,
+      overallYearlyYield: 0,
+      overallYearlyYieldWithLatentGains: 0,
     },
-  )
-
-  summary.totalOutOfPocket = initialOutOfPocket + summary.totalEffort
-  summary.finalProfitLoss = summary.finalAssetValue - summary.totalOutOfPocket
+  );
 
   const repaymentYear = loanPrincipal > 0
     ? Math.min(input.loanDurationYears, input.horizonYears)
@@ -234,12 +250,20 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
   const repaymentReferenceRow = yearlyResults[repaymentRowIndex]
   const incomeAfterLoanRow = yearlyResults[Math.min(repaymentRowIndex + 1, yearlyResults.length - 1)]
 
-  summary.leverageRatio = repaymentReferenceRow && repaymentReferenceRow.cumulativeOutOfPocket > 0
-    ? repaymentReferenceRow.assetValueEnd / repaymentReferenceRow.cumulativeOutOfPocket
+  summary.leverageRatio = repaymentReferenceRow && repaymentReferenceRow.endOfyearCapital > 0
+    ? repaymentReferenceRow.endOfYearFixedAssetsValuation / repaymentReferenceRow.endOfyearCapital
     : 0
   summary.annualIncomeAfterLoan = incomeAfterLoanRow
     ? incomeAfterLoanRow.grossRents - incomeAfterLoanRow.taxesPaid
     : 0
+  summary.yieldAtEndOfSimulation = yearlyResults[yearlyResults.length - 1]
+    ? yearlyResults[yearlyResults.length - 1].annualYield
+    : 0;
+
+  summary.finalCapitalLatentGain = summary.finalFixedAssetsValue - summary.totalOutOfPocket;
+
+  summary.overallYearlyYield = summary.finalCashValue / (summary.totalOutOfPocket * yearlyResults.length);
+  summary.overallYearlyYieldWithLatentGains = summary.finalLatentProfit / (summary.totalOutOfPocket * yearlyResults.length);
 
   return {
     yearlyResults,

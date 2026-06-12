@@ -48,25 +48,31 @@ export interface YearlyResult {
   loanRemainingCapital: number;
   taxesPaid: number;
   effortAmount: number;
-  assetValueEnd: number;
-  globalProfitLoss: number;
-  cumulativeOutOfPocket: number;
-  cumulativeProfit: number;
+  endOfYearFixedAssetsValuation: number;
+  endOfYearCashValuation: number;
+  endOfYearValuation: number;
+  endOfyearCapital: number;
+  endofYearLatentProfit: number;
 }
 
 export interface SimulationSummary {
-  initialAssetValue: number
-  totalBorrowedAmount: number
-  totalFees: number
-  annualIncomeAfterLoan: number
-  totalRents: number
-  totalBankReimbursement: number
-  totalTaxes: number
-  totalEffort: number
-  totalOutOfPocket: number
-  finalAssetValue: number
-  finalProfitLoss: number
-  leverageRatio: number
+  initialAssetValue: number;
+  totalBorrowedAmount: number;
+  totalFees: number;
+  annualIncomeAfterLoan: number;
+  yieldAtEndOfSimulation: number;
+  totalRents: number;
+  totalBankReimbursement: number;
+  totalTaxes: number;
+  totalOutOfPocket: number;
+  finalFixedAssetsValue: number;
+  finalCashValue: number;
+  finalValuation: number;
+  finalLatentProfit: number;
+  finalCapitalLatentGain: number;
+  overallYearlyYield: number;
+  overallYearlyYieldWithLatentGains: number;
+  leverageRatio: number;
 }
 
 export interface SimulationOutput {

@@ -82,7 +82,6 @@ h3 {
 .hero-text {
   margin-top: 0.6rem;
   color: var(--muted);
-  max-width: 72ch;
 }
 
 .disclaimer {
@@ -142,15 +141,20 @@ h3 {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.panel-head > :first-child {
+  flex: 1;
 }
 
 .panel-actions {
   display: flex;
   gap: 0.65rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .panel-subtitle {
@@ -357,6 +361,150 @@ th {
   margin-top: 0.18rem;
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+.winner-mark {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #854d0e;
+}
+
+.comparison-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  background: #e6f2f1;
+  color: #0f766e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: help;
+  vertical-align: text-top;
+}
+
+.chart-panel h2 {
+  margin-bottom: 0.35rem;
+}
+
+.chart-wrap {
+  margin-top: 0.4rem;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart-wrap svg {
+  width: 100%;
+  min-width: 760px;
+  display: block;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.legend-item::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.legend-red::before {
+  background: #c9413a;
+}
+
+.legend-green::before {
+  background: #0f7a43;
+}
+
+.legend-blue::before {
+  background: #3b82f6;
+}
+
+.legend-line::before {
+  height: 3px;
+  border-radius: 999px;
+  background: #2b6cb0;
+}
+
+.chart-axis {
+  stroke: #76808b;
+  stroke-width: 1;
+}
+
+.chart-grid {
+  stroke: #e5e1d8;
+  stroke-width: 1;
+}
+
+.chart-zero {
+  stroke: #b99f3f;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-label {
+  fill: #55606d;
+  font-size: 11px;
+  font-family: 'Work Sans', 'Trebuchet MS', sans-serif;
+}
+
+.chart-bar-red {
+  fill: #c9413a;
+  opacity: 0.86;
+}
+
+.chart-bar-green {
+  fill: #0f7a43;
+  opacity: 0.8;
+}
+
+.chart-bar-blue {
+  fill: #3b82f6;
+  opacity: 0.82;
+}
+
+.chart-line {
+  fill: none;
+  stroke: #2b6cb0;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-point {
+  fill: #2b6cb0;
+}
+
+.rank-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #e8f5e9;
+  border-radius: 3px;
+  padding: 0.15rem 0.3rem;
+  color: #2e7d32;
 }
 
 .positive {

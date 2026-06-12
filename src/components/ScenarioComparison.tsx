@@ -18,6 +18,28 @@ function fromPercent(value: number): number {
   return value / 100
 }
 
+function getRankBadge(rank: number): string {
+  switch (rank) {
+    case 1:
+      return '🥇'
+    case 2:
+      return '🥈'
+    case 3:
+      return '🥉'
+    default:
+      return `${rank}`
+  }
+}
+
+function computeRanks<T>(items: T[], getValue: (item: T) => number): Map<T, number> {
+  const sorted = [...items].sort((a, b) => getValue(b) - getValue(a))
+  const ranks = new Map<T, number>()
+  sorted.forEach((item, index) => {
+    ranks.set(item, index + 1)
+  })
+  return ranks
+}
+
 export function ScenarioComparison({
   scenarios,
   outputs,
@@ -25,18 +47,41 @@ export function ScenarioComparison({
   onUpdateScenario,
   onRemoveScenario,
 }: ScenarioComparisonProps) {
+  const simulatedYears = outputs[0]?.output.yearlyResults.length
+
+  const leverageRanks = computeRanks(
+    outputs,
+    (output) => output.output.summary.leverageRatio,
+  )
+  const yieldRanks = computeRanks(
+    outputs,
+    (output) => output.output.summary.yieldAtEndOfSimulation,
+  )
+  const overallYieldRanks = computeRanks(
+    outputs,
+    (output) => output.output.summary.overallYearlyYield,
+  )
+  const profitRanks = computeRanks(
+    outputs,
+    (output) => output.output.summary.finalLatentProfit,
+  )
+  const overallYieldWithLatentGainsRanks = computeRanks(  
+    outputs,
+    (output) => output.output.summary.overallYearlyYieldWithLatentGains,
+  )
+
   return (
     <section className="panel">
       <div className="panel-head">
         <div>
-          <h2>Comparaison de plusieurs scenarios avec emprunt</h2>
+          <h2>Comparaison de plusieurs scénarios avec emprunt</h2>
           <p className="panel-subtitle">
-            Tous les scenarios ci-dessous utilisent un prêt et partagent les autres
-            parametres du formulaire principal.
+            Tous les scénarios ci-dessous utilisent un prêt et partagent les autres
+            paramètres du formulaire principal.
           </p>
         </div>
         <button type="button" className="btn" onClick={onAddFromCurrent}>
-          Ajouter le scenario courant
+          Ajouter le scénario courant
         </button>
       </div>
 
@@ -128,32 +173,68 @@ export function ScenarioComparison({
         <table>
           <thead>
             <tr>
-              <th>Scenario</th>
+              <th>Scénario</th>
               <th>Apport</th>
-              <th>Duree</th>
+              <th>Durée</th>
               <th>Taux prêt</th>
               <th>Taux assurance</th>
               <th>Effort total consenti</th>
-              <th>Valeur finale</th>
-              <th>Resultat final</th>
+              <th>Effet de levier</th>
+              <th>
+                Rentabilité
+                <span className="subcell">année {simulatedYears}</span>
+              </th>
+              <th>
+                Rentabilité
+                <span className="subcell">moyenne sur {simulatedYears} ans</span>
+              </th>
+              <th>
+                Rentabilité
+                <span className="subcell">moyenne avec plus values latentes</span>
+              </th>
+              <th>Profit cumulé
+                <span className="subcell">année {simulatedYears}</span>                
+              </th>
             </tr>
           </thead>
           <tbody>
-            {outputs.map(({ scenario, output }) => (
-              <tr key={`${scenario.id}-result`}>
-                <td>{scenario.name || 'Sans nom'}</td>
-                <td>{formatEuro(scenario.downPaymentAmount)}</td>
-                <td>{scenario.loanDurationYears} ans</td>
-                <td>{formatPercent(scenario.loanAnnualRate)}</td>
-                <td>{formatPercent(scenario.loanAnnualInsuranceRate)}</td>
-                <td>{formatEuro(output.summary.totalOutOfPocket)}</td>
-                <td>{formatEuro(output.summary.finalAssetValue)}</td>
-                <td
-                  className={
-                    output.summary.finalProfitLoss >= 0 ? 'positive' : 'negative'
-                  }
-                >
-                  {formatEuro(output.summary.finalProfitLoss)}
+            {outputs.map((scenarioOutput) => (
+              <tr key={`${scenarioOutput.scenario.id}-result`}>
+                <td>{scenarioOutput.scenario.name || 'Sans nom'}</td>
+                <td>{formatEuro(scenarioOutput.scenario.downPaymentAmount)}</td>
+                <td>{scenarioOutput.scenario.loanDurationYears} ans</td>
+                <td>{formatPercent(scenarioOutput.scenario.loanAnnualRate)}</td>
+                <td>{formatPercent(scenarioOutput.scenario.loanAnnualInsuranceRate)}</td>
+                <td>{formatEuro(scenarioOutput.output.summary.totalOutOfPocket)}</td>
+                <td>
+                  <span>{formatPercent(scenarioOutput.output.summary.leverageRatio)}</span>
+                  <span className="rank-badge" title="Rang">
+                    {getRankBadge(leverageRanks.get(scenarioOutput) ?? 0)}
+                  </span>
+                </td>
+                <td>
+                  <span>{formatPercent(scenarioOutput.output.summary.yieldAtEndOfSimulation)}</span>
+                  <span className="rank-badge" title="Rang">
+                    {getRankBadge(yieldRanks.get(scenarioOutput) ?? 0)}
+                  </span>
+                </td>
+                <td>
+                  <span>{formatPercent(scenarioOutput.output.summary.overallYearlyYield)}</span>
+                  <span className="rank-badge" title="Rang">
+                    {getRankBadge(overallYieldRanks.get(scenarioOutput) ?? 0)}
+                  </span>
+                </td>
+                <td>
+                  <span>{formatPercent(scenarioOutput.output.summary.overallYearlyYieldWithLatentGains)}</span>
+                  <span className="rank-badge" title="Rang">
+                    {getRankBadge(overallYieldWithLatentGainsRanks.get(scenarioOutput) ?? 0)}
+                  </span>
+                </td>
+                <td className={scenarioOutput.output.summary.finalLatentProfit >= 0 ? 'positive' : 'negative'}>
+                  <span>{formatEuro(scenarioOutput.output.summary.finalLatentProfit)}</span>
+                  <span className="rank-badge" title="Rang">
+                    {getRankBadge(profitRanks.get(scenarioOutput) ?? 0)}
+                  </span>
                 </td>
               </tr>
             ))}

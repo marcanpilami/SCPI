@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { buildYearlyResultsCsv } from '../csv'
+import type { YearlyResult } from '../../types/simulation'
 
 describe('buildYearlyResultsCsv', () => {
   it('exports header and one yearly line', () => {
-    const csv = buildYearlyResultsCsv([
+    const rows: YearlyResult[] = [
       {
         year: 1,
         grossRents: 1000,
@@ -19,17 +20,22 @@ describe('buildYearlyResultsCsv', () => {
         loanRemainingCapital: 150000,
         taxesPaid: 340,
         effortAmount: 120,
-        assetValueEnd: 101000,
-        globalProfitLoss: 500,
-        cumulativeOutOfPocket: 51000,
-        cumulativeProfit: 660,
+        endOfYearFixedAssetsValuation: 101000,
+        endOfYearCashValuation: 220,
+        endOfYearValuation: 500,
+        endOfyearCapital: 51000,
+        endofYearLatentProfit: -50500,
       },
-    ])
+    ]
+
+    const csv = buildYearlyResultsCsv(rows)
 
     const lines = csv.split('\n')
     expect(lines).toHaveLength(2)
     expect(lines[0]).toContain('"Annee"')
+    expect(lines[0]).toContain('"Profit ou perte globale"')
     expect(lines[1]).toContain('"1"')
     expect(lines[1]).toContain('"1000.00"')
+    expect(lines[1]).toContain('"500.00"')
   })
 })

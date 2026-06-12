@@ -116,4 +116,33 @@ describe('simulateScpiInvestment', () => {
     expect(output.yearlyResults[0].grossRents).toBeCloseTo(6000, 6)
     expect(output.yearlyResults[1].grossRents).toBeCloseTo(12000, 6)
   })
+
+  it('computes final capital latent gain from assets and out of pocket', () => {
+    const output = simulateScpiInvestment({
+      ...DEFAULT_SIMULATION_INPUT,
+      horizonYears: 8,
+    })
+
+    expect(output.summary.finalCapitalLatentGain).toBeCloseTo(
+      output.summary.finalFixedAssetsValue - output.summary.totalOutOfPocket,
+      8,
+    )
+  })
+
+  it('computes overall yearly yield metrics from final values', () => {
+    const output = simulateScpiInvestment({
+      ...DEFAULT_SIMULATION_INPUT,
+      horizonYears: 6,
+    })
+
+    const denominator = output.summary.totalOutOfPocket * output.yearlyResults.length
+    expect(output.summary.overallYearlyYield).toBeCloseTo(
+      output.summary.finalCashValue / denominator,
+      8,
+    )
+    expect(output.summary.overallYearlyYieldWithLatentGains).toBeCloseTo(
+      output.summary.finalLatentProfit / denominator,
+      8,
+    )
+  })
 })

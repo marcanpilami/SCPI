@@ -39,8 +39,8 @@ export function buildYearlyResultsCsv(rows: YearlyResult[]): string {
       row.loanInsurancePaid.toFixed(2),
       row.taxesPaid.toFixed(2),
       row.effortAmount.toFixed(2),
-      row.assetValueEnd.toFixed(2),
-      row.globalProfitLoss.toFixed(2),
+      row.endOfYearFixedAssetsValuation.toFixed(2),
+      row.endOfYearValuation.toFixed(2),
     ]
       .map(toCsvCell)
       .join(','),
