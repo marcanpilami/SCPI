@@ -280,6 +280,17 @@ h3 {
   border-color: #efb4ad;
 }
 
+.btn-secondary {
+  background: #fff;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.btn-secondary:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .scenario-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(180px, 1fr));

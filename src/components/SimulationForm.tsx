@@ -4,6 +4,7 @@ import type { SimulationInput } from '../types/simulation'
 interface SimulationFormProps {
   input: SimulationInput
   onChange: (nextInput: SimulationInput) => void
+  onReset?: () => void
 }
 
 function asPercent(value: number): number {
@@ -55,7 +56,7 @@ function NumberField({
   )
 }
 
-export function SimulationForm({ input, onChange }: SimulationFormProps) {
+export function SimulationForm({ input, onChange, onReset }: SimulationFormProps) {
   const update = <K extends keyof SimulationInput>(key: K, value: SimulationInput[K]) => {
     onChange({
       ...input,
@@ -65,10 +66,24 @@ export function SimulationForm({ input, onChange }: SimulationFormProps) {
 
   return (
     <section className="panel form-panel">
-      <h2>Paramètres de simulation</h2>
-      <p className="panel-subtitle">
-        Tous les calculs sont annuels et affichés en euros constants.
-      </p>
+      <div className="panel-head">
+        <div>
+          <h2>Paramètres de simulation</h2>
+          <p className="panel-subtitle">
+            Tous les calculs sont annuels et affichés en euros constants.
+          </p>
+        </div>
+        {onReset && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onReset}
+            title="Restaurer les paramètres par défaut et effacer l'historique sauvegardé"
+          >
+            Réinitialiser
+          </button>
+        )}
+      </div>
 
       <div className="form-groups">
 

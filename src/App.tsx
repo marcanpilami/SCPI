@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { LoanModeComparison } from './components/LoanModeComparison'
 import { ScenarioComparison } from './components/ScenarioComparison'
 import { ProjectionChart } from './components/ProjectionChart'
@@ -11,10 +11,39 @@ import {
 } from './config/constants'
 import { buildYearlyResultsCsv, downloadCsv } from './lib/csv'
 import { simulateScpiInvestment } from './lib/scpiSimulation'
-import type { LoanScenario } from './types/simulation'
+import type { LoanScenario, SimulationInput } from './types/simulation'
+
+const STORAGE_KEY_SIMULATION_INPUT = 'scpi:simulation-input'
+
+function readPersistedSimulationInput(): SimulationInput {
+  if (typeof window === 'undefined') {
+    return DEFAULT_SIMULATION_INPUT
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_SIMULATION_INPUT)
+    if (!raw) {
+      return DEFAULT_SIMULATION_INPUT
+    }
+
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') {
+      return DEFAULT_SIMULATION_INPUT
+    }
+
+    return {
+      ...DEFAULT_SIMULATION_INPUT,
+      ...(parsed as Partial<SimulationInput>),
+    }
+  } catch {
+    return DEFAULT_SIMULATION_INPUT
+  }
+}
 
 function App() {
-  const [input, setInput] = useState(DEFAULT_SIMULATION_INPUT)
+  const [input, setInput] = useState<SimulationInput>(() =>
+    readPersistedSimulationInput(),
+  )
   const [showDetailed, setShowDetailed] = useState(false)
   const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [loanScenarios, setLoanScenarios] = useState<LoanScenario[]>(
@@ -47,6 +76,14 @@ function App() {
     [input, loanScenarios],
   )
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY_SIMULATION_INPUT, JSON.stringify(input))
+    } catch {
+      // Ignore persistence issues (private mode/quota), app remains functional.
+    }
+  }, [input])
+
   function handleExportCsv(): void {
     const csv = buildYearlyResultsCsv(simulation.yearlyResults)
     downloadCsv(csv, 'projection-scpi.csv')
@@ -77,6 +114,15 @@ function App() {
 
   function handleRemoveScenario(id: string): void {
     setLoanScenarios((current) => current.filter((scenario) => scenario.id !== id))
+  }
+
+  function handleResetInput(): void {
+    setInput(DEFAULT_SIMULATION_INPUT)
+    try {
+      window.localStorage.removeItem(STORAGE_KEY_SIMULATION_INPUT)
+    } catch {
+      // Ignore persistence issues
+    }
   }
 
   return (
@@ -130,7 +176,7 @@ function App() {
         </div>
       )}
 
-      <SimulationForm input={input} onChange={setInput} />
+      <SimulationForm input={input} onChange={setInput} onReset={handleResetInput} />
       <SimulationSummary summary={simulation.summary} />
       <LoanModeComparison
         withLoan={withLoanSimulation}
