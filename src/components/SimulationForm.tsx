@@ -94,7 +94,47 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
         )}
       </div>
 
+      
+
       <div className="form-groups">
+        <fieldset className="form-group">
+          <legend className="form-group-legend">Projet & Simulation</legend>
+          <div className="form-grid">
+            <NumberField
+              id="investmentAmount"
+              label="Montant investi"
+              value={input.investmentAmount}
+              min={INPUT_LIMITS.investmentAmount.min}
+              max={INPUT_LIMITS.investmentAmount.max}
+              step={1000}
+              suffix="EUR"
+              onChange={(value) => update('investmentAmount', value)}
+            />
+
+            <NumberField
+              id="otherInitialExpenses"
+              label="Autres frais initiaux"
+              value={input.otherInitialExpenses}
+              min={INPUT_LIMITS.otherInitialExpenses.min}
+              max={INPUT_LIMITS.otherInitialExpenses.max}
+              step={100}
+              suffix="EUR"
+              onChange={(value) => update('otherInitialExpenses', value)}
+            />
+
+            <NumberField
+              id="horizonYears"
+              label="Horizon de simulation"
+              value={input.horizonYears}
+              min={INPUT_LIMITS.horizonYears.min}
+              max={INPUT_LIMITS.horizonYears.max}
+              step={1}
+              suffix="ans"
+              onChange={(value) => update('horizonYears', value)}
+            />
+          </div>
+        </fieldset>
+
         <fieldset className="form-group">
           <legend className="form-group-legend">Prêt bancaire</legend>
           <div className="form-grid">
@@ -122,7 +162,7 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
 
             <NumberField
               id="loanDurationYears"
-              label="Duree du prêt"
+              label="Durée du prêt"
               value={input.loanDurationYears}
               min={INPUT_LIMITS.loanDurationYears.min}
               max={INPUT_LIMITS.loanDurationYears.max}
@@ -159,41 +199,9 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
         </fieldset>
 
         <fieldset className="form-group">
-          <legend className="form-group-legend">SCPI &amp; investissement</legend>
+          <legend className="form-group-legend">SCPI</legend>
           <ScpiPortfolioPanel input={input} onChange={onChange} resetSignal={resetSignal} />
           <div className="form-grid">
-            <NumberField
-              id="investmentAmount"
-              label="Montant investi"
-              value={input.investmentAmount}
-              min={INPUT_LIMITS.investmentAmount.min}
-              max={INPUT_LIMITS.investmentAmount.max}
-              step={1000}
-              suffix="EUR"
-              onChange={(value) => update('investmentAmount', value)}
-            />
-
-            <NumberField
-              id="otherInitialExpenses"
-              label="Autres frais initiaux"
-              value={input.otherInitialExpenses}
-              min={INPUT_LIMITS.otherInitialExpenses.min}
-              max={INPUT_LIMITS.otherInitialExpenses.max}
-              step={100}
-              suffix="EUR"
-              onChange={(value) => update('otherInitialExpenses', value)}
-            />
-
-            <NumberField
-              id="horizonYears"
-              label="Horizon de simulation"
-              value={input.horizonYears}
-              min={INPUT_LIMITS.horizonYears.min}
-              max={INPUT_LIMITS.horizonYears.max}
-              step={1}
-              suffix="ans"
-              onChange={(value) => update('horizonYears', value)}
-            />
             
             <NumberField
               id="subscriptionFeeRate"
@@ -219,7 +227,7 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
 
             <NumberField
               id="enjoymentDelayMonths"
-              label="Delai de jouissance"
+              label="Délai de jouissance"
               value={input.enjoymentDelayMonths}
               min={INPUT_LIMITS.enjoymentDelayMonths.min}
               max={INPUT_LIMITS.enjoymentDelayMonths.max}
@@ -238,22 +246,6 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               suffix="%"
               onChange={(value) => update('annualRevaluationRate', fromPercent(value))}
             />
-          </div>
-        </fieldset>
-
-        <fieldset className="form-group">
-          <legend className="form-group-legend">Fiscalite</legend>
-          <div className="form-grid">
-            <NumberField
-              id="taxBracketRate"
-              label="Tranche marginale d'imposition (TMI)"
-              value={asPercent(input.taxBracketRate)}
-              min={INPUT_LIMITS.taxBracketRate.min * 100}
-              max={INPUT_LIMITS.taxBracketRate.max * 100}
-              step={0.1}
-              suffix="%"
-              onChange={(value) => update('taxBracketRate', fromPercent(value))}
-            />
 
             <NumberField
               id="revenueInFranceRate"
@@ -265,10 +257,26 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               suffix="%"
               onChange={(value) => update('revenueInFranceRate', fromPercent(value))}
             />
+          </div>
+        </fieldset>
+
+        <fieldset className="form-group">
+          <legend className="form-group-legend">Fiscalité</legend>
+          <div className="form-grid">
+            <NumberField
+              id="taxBracketRate"
+              label="Taux marginal d'imposition (TMI)"
+              value={asPercent(input.taxBracketRate)}
+              min={INPUT_LIMITS.taxBracketRate.min * 100}
+              max={INPUT_LIMITS.taxBracketRate.max * 100}
+              step={0.1}
+              suffix="%"
+              onChange={(value) => update('taxBracketRate', fromPercent(value))}
+            />
 
             <NumberField
               id="foreignTaxRate"
-              label="Taux d'imposition hors France"
+              label="Taux d'imposition hors France moyen"
               value={asPercent(input.foreignTaxRate)}
               min={INPUT_LIMITS.foreignTaxRate.min * 100}
               max={INPUT_LIMITS.foreignTaxRate.max * 100}
