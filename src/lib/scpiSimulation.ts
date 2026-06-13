@@ -2,6 +2,7 @@ import {
   INPUT_LIMITS,
   SOCIAL_CONTRIBUTIONS_RATE,
 } from '../config/constants'
+import { clamp } from './formHelpers'
 import { calculateLoanSchedule } from './loan'
 import type {
   LoanYearlyBreakdown,
@@ -9,10 +10,6 @@ import type {
   SimulationOutput,
   YearlyResult,
 } from '../types/simulation'
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
 
 function normalizeInput(rawInput: SimulationInput): SimulationInput {
   return {

@@ -10,6 +10,19 @@ interface ScenarioComparisonProps {
   onRemoveScenario: (id: string) => void
 }
 
+type ScenarioOutputEntry = { scenario: LoanScenario; output: SimulationOutput }
+
+interface ComparisonRow {
+  key: string
+  label: string
+  subtitle?: string
+  getValue: (entry: ScenarioOutputEntry) => number
+  formatValue: (value: number) => string
+  showRank?: boolean
+  rankReverse?: boolean
+  colorBySign?: boolean
+}
+
 function asPercent(value: number): number {
   return value * 100
 }
@@ -19,25 +32,73 @@ function fromPercent(value: number): number {
 }
 
 function getRankBadge(rank: number): string {
-  switch (rank) {
-    case 1:
-      return '🥇'
-    case 2:
-      return '🥈'
-    case 3:
-      return '🥉'
-    default:
-      return `${rank}`
-  }
+  return `${rank}`
 }
 
-function computeRanks<T>(items: T[], getValue: (item: T) => number): Map<T, number> {
-  const sorted = [...items].sort((a, b) => getValue(b) - getValue(a))
-  const ranks = new Map<T, number>()
-  sorted.forEach((item, index) => {
-    ranks.set(item, index + 1)
+function computeRowRanks(
+  outputs: ScenarioOutputEntry[],
+  getValue: (entry: ScenarioOutputEntry) => number,
+  rankReverse = false,
+): Map<string, number> {
+  const sorted = [...outputs].sort((a, b) =>
+    rankReverse ? getValue(a) - getValue(b) : getValue(b) - getValue(a),
+  )
+  const ranks = new Map<string, number>()
+
+  sorted.forEach((entry, index) => {
+    ranks.set(entry.scenario.id, index + 1)
   })
+
   return ranks
+}
+
+function ComparisonTableRow({
+  row,
+  outputs,
+}: {
+  row: ComparisonRow
+  outputs: ScenarioOutputEntry[]
+}) {
+  const rowRanks = row.showRank
+    ? computeRowRanks(outputs, row.getValue, row.rankReverse)
+    : undefined
+
+  return (
+    <tr>
+      <td>
+        <span>{row.label}</span>
+        {row.subtitle && <span className="subcell">{row.subtitle}</span>}
+      </td>
+      {outputs.map((scenarioOutput) => {
+        const value = row.getValue(scenarioOutput)
+        const className = row.colorBySign
+          ? value < 0
+            ? 'negative'
+            : 'positive'
+          : undefined
+
+        return (
+          <td key={`${row.key}-${scenarioOutput.scenario.id}`} className={className}>
+            <span className="comparison-cell-value">
+              <span>{row.formatValue(value)}</span>
+              {rowRanks && (
+                <span
+                  className={`rank-badge ${
+                    (rowRanks.get(scenarioOutput.scenario.id) ?? 0) === 1
+                      ? 'rank-badge-first'
+                      : ''
+                  }`}
+                  title="Rang"
+                >
+                  {getRankBadge(rowRanks.get(scenarioOutput.scenario.id) ?? 0)}
+                </span>
+              )}
+            </span>
+          </td>
+        )
+      })}
+    </tr>
+  )
 }
 
 export function ScenarioComparison({
@@ -48,195 +109,246 @@ export function ScenarioComparison({
   onRemoveScenario,
 }: ScenarioComparisonProps) {
   const simulatedYears = outputs[0]?.output.yearlyResults.length
+  const simulatedYearsLabel = simulatedYears ?? '-'
 
-  const leverageRanks = computeRanks(
-    outputs,
-    (output) => output.output.summary.leverageRatio,
-  )
-  const yieldRanks = computeRanks(
-    outputs,
-    (output) => output.output.summary.yieldAtEndOfSimulation,
-  )
-  const overallYieldRanks = computeRanks(
-    outputs,
-    (output) => output.output.summary.overallYearlyYield,
-  )
-  const profitRanks = computeRanks(
-    outputs,
-    (output) => output.output.summary.finalLatentProfit,
-  )
-  const overallYieldWithLatentGainsRanks = computeRanks(  
-    outputs,
-    (output) => output.output.summary.overallYearlyYieldWithLatentGains,
-  )
+  const rows: ComparisonRow[] = [
+    {
+      key: 'totalOutOfPocket',
+      label: 'Effort total consenti',
+      getValue: (entry) => entry.output.summary.totalOutOfPocket,
+      formatValue: formatEuro,
+      showRank: true,
+      rankReverse: true,
+    },
+    {
+      key: 'totalTaxes',
+      label: 'Impôts payés',
+      subtitle: `Cumul sur ${simulatedYearsLabel} ans`,
+      getValue: (entry) => entry.output.summary.totalTaxes,
+      formatValue: formatEuro,
+      showRank: true,
+      rankReverse: true,
+    },
+    {
+      key: 'leverageRatio',
+      label: 'Effet de levier',
+      getValue: (entry) => entry.output.summary.leverageRatio,
+      formatValue: formatPercent,
+      showRank: true,
+    },
+    {
+      key: 'yieldAtEndOfSimulation',
+      label: 'Rendement net d\'impôts',
+      subtitle: `année ${simulatedYearsLabel}, sans plus-values latentes`,
+      getValue: (entry) => entry.output.summary.yieldAtEndOfSimulation,
+      formatValue: formatPercent,
+      showRank: true,
+    },
+    {
+      key: 'overallYearlyYield',
+      label: 'Rendement net d\'impôts',
+      subtitle: `moyen sur ${simulatedYearsLabel} ans, sans plus-values latentes`,
+      getValue: (entry) => entry.output.summary.overallYearlyYield,
+      formatValue: formatPercent,
+      showRank: true,
+    },
+    {
+      key: 'overallYearlyYieldWithLatentGains',
+      label: 'Rendement net d\'impôts',
+      subtitle: `moyen sur ${simulatedYearsLabel} ans, avec plus-values latentes`,
+      getValue: (entry) => entry.output.summary.overallYearlyYieldWithLatentGains,
+      formatValue: formatPercent,
+      showRank: true,
+    },    
+    {
+      key: 'finalCashValue',
+      label: 'Loyers net d\'impôts reçus au total',
+      subtitle: `Cumul sur ${simulatedYearsLabel} ans`,
+      getValue: (entry) => entry.output.summary.finalCashValue,
+      formatValue: formatEuro,
+      showRank: true,
+      colorBySign: true,
+    },
+     {
+      key: 'finalCapitalLatentGain',
+      label: 'Plus value latente',
+      subtitle: `Après ${simulatedYearsLabel} ans`,
+      getValue: (entry) => entry.output.summary.finalCapitalLatentGain,
+      formatValue: formatEuro,
+      showRank: true,
+      colorBySign: true,
+    },
+    {
+      key: 'finalLatentProfit',
+      label: 'Profit total cumulé',
+      subtitle: `Si tout est vendu l'année ${simulatedYearsLabel}`,
+      getValue: (entry) => entry.output.summary.finalLatentProfit,
+      formatValue: formatEuro,
+      showRank: true,
+      colorBySign: true,
+    },
+  ]
 
   return (
     <section className="panel">
       <div className="panel-head">
         <div>
-          <h2>Comparaison de plusieurs scénarios avec emprunt</h2>
+          <h2>Comparaison de plusieurs scénarios d'emprunt</h2>
           <p className="panel-subtitle">
-            Tous les scénarios ci-dessous utilisent un prêt et partagent les autres
+            Tous les scénarios ci-dessous diffèrent par les caractéristiques de leur prêt et partagent les autres
             paramètres du formulaire principal.
           </p>
         </div>
         <button type="button" className="btn" onClick={onAddFromCurrent}>
-          Ajouter le scénario courant
+          + Nouveau scénario
         </button>
-      </div>
-
-      <div className="scenario-grid">
-        {scenarios.map((scenario) => (
-          <article key={scenario.id} className="scenario-card">
-            <label>
-              Nom
-              <input
-                type="text"
-                value={scenario.name}
-                onChange={(event) =>
-                  onUpdateScenario(scenario.id, { name: event.target.value })
-                }
-              />
-            </label>
-            <label>
-              Apport (EUR)
-              <input
-                type="number"
-                min={INPUT_LIMITS.downPaymentAmount.min}
-                max={INPUT_LIMITS.downPaymentAmount.max}
-                step={500}
-                value={scenario.downPaymentAmount}
-                onChange={(event) =>
-                  onUpdateScenario(scenario.id, {
-                    downPaymentAmount: Number(event.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
-              Duree (ans)
-              <input
-                type="number"
-                min={INPUT_LIMITS.loanDurationYears.min}
-                max={INPUT_LIMITS.loanDurationYears.max}
-                value={scenario.loanDurationYears}
-                onChange={(event) =>
-                  onUpdateScenario(scenario.id, {
-                    loanDurationYears: Number(event.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
-              Taux prêt (%)
-              <input
-                type="number"
-                min={INPUT_LIMITS.loanAnnualRate.min * 100}
-                max={INPUT_LIMITS.loanAnnualRate.max * 100}
-                step={0.01}
-                value={asPercent(scenario.loanAnnualRate)}
-                onChange={(event) =>
-                  onUpdateScenario(scenario.id, {
-                    loanAnnualRate: fromPercent(Number(event.target.value)),
-                  })
-                }
-              />
-            </label>
-            <label>
-              Taux assurance (%)
-              <input
-                type="number"
-                min={INPUT_LIMITS.loanAnnualInsuranceRate.min * 100}
-                max={INPUT_LIMITS.loanAnnualInsuranceRate.max * 100}
-                step={0.01}
-                value={asPercent(scenario.loanAnnualInsuranceRate)}
-                onChange={(event) =>
-                  onUpdateScenario(scenario.id, {
-                    loanAnnualInsuranceRate: fromPercent(Number(event.target.value)),
-                  })
-                }
-              />
-            </label>
-            <button
-              type="button"
-              className="btn btn-danger"
-              onClick={() => onRemoveScenario(scenario.id)}
-              disabled={scenarios.length <= 1}
-            >
-              Supprimer
-            </button>
-          </article>
-        ))}
       </div>
 
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Scénario</th>
-              <th>Apport</th>
-              <th>Durée</th>
-              <th>Taux prêt</th>
-              <th>Taux assurance</th>
-              <th>Effort total consenti</th>
-              <th>Effet de levier</th>
-              <th>
-                Rentabilité
-                <span className="subcell">année {simulatedYears}</span>
-              </th>
-              <th>
-                Rentabilité
-                <span className="subcell">moyenne sur {simulatedYears} ans</span>
-              </th>
-              <th>
-                Rentabilité
-                <span className="subcell">moyenne avec plus values latentes</span>
-              </th>
-              <th>Profit cumulé
-                <span className="subcell">année {simulatedYears}</span>                
-              </th>
+              <th>Indicateur</th>
+              {outputs.map((scenarioOutput) => (
+                <th key={`${scenarioOutput.scenario.id}-header`}>
+                  <div className="scenario-header-cell">
+                    {scenarioOutput.scenario.editable ? (
+                      <input
+                        className="scenario-cell-input scenario-header-name-input"
+                        type="text"
+                        value={scenarioOutput.scenario.name}
+                        onChange={(event) =>
+                          onUpdateScenario(scenarioOutput.scenario.id, {
+                            name: event.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      <span>{scenarioOutput.scenario.name || 'Sans nom'}</span>
+                    )}
+                    {scenarioOutput.scenario.editable && (
+                      <button
+                        type="button"
+                        className="table-delete-icon-btn"
+                        onClick={() => onRemoveScenario(scenarioOutput.scenario.id)}
+                        disabled={scenarios.length <= 1}
+                        title="Supprimer ce scénario"
+                        aria-label="Supprimer ce scénario"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {outputs.map((scenarioOutput) => (
-              <tr key={`${scenarioOutput.scenario.id}-result`}>
-                <td>{scenarioOutput.scenario.name || 'Sans nom'}</td>
-                <td>{formatEuro(scenarioOutput.scenario.downPaymentAmount)}</td>
-                <td>{scenarioOutput.scenario.loanDurationYears} ans</td>
-                <td>{formatPercent(scenarioOutput.scenario.loanAnnualRate)}</td>
-                <td>{formatPercent(scenarioOutput.scenario.loanAnnualInsuranceRate)}</td>
-                <td>{formatEuro(scenarioOutput.output.summary.totalOutOfPocket)}</td>
-                <td>
-                  <span>{formatPercent(scenarioOutput.output.summary.leverageRatio)}</span>
-                  <span className="rank-badge" title="Rang">
-                    {getRankBadge(leverageRanks.get(scenarioOutput) ?? 0)}
-                  </span>
+            <tr>
+              <td>Apport (EUR)</td>
+              {outputs.map((scenarioOutput) => (
+                <td key={`down-payment-${scenarioOutput.scenario.id}`}>
+                  {scenarioOutput.scenario.editable ? (
+                    <input
+                      className="scenario-cell-input"
+                      type="number"
+                      min={INPUT_LIMITS.downPaymentAmount.min}
+                      max={INPUT_LIMITS.downPaymentAmount.max}
+                      step={500}
+                      value={scenarioOutput.scenario.downPaymentAmount}
+                      onChange={(event) =>
+                        onUpdateScenario(scenarioOutput.scenario.id, {
+                          downPaymentAmount: Number(event.target.value),
+                        })
+                      }
+                    />
+                  ) : (
+                    <span>{formatEuro(scenarioOutput.scenario.downPaymentAmount)}</span>
+                  )}
                 </td>
-                <td>
-                  <span>{formatPercent(scenarioOutput.output.summary.yieldAtEndOfSimulation)}</span>
-                  <span className="rank-badge" title="Rang">
-                    {getRankBadge(yieldRanks.get(scenarioOutput) ?? 0)}
-                  </span>
+              ))}
+            </tr>
+
+            <tr>
+              <td>Durée (ans)</td>
+              {outputs.map((scenarioOutput) => (
+                <td key={`duration-${scenarioOutput.scenario.id}`}>
+                  {scenarioOutput.scenario.editable ? (
+                    <input
+                      className="scenario-cell-input"
+                      type="number"
+                      min={INPUT_LIMITS.loanDurationYears.min}
+                      max={INPUT_LIMITS.loanDurationYears.max}
+                      value={scenarioOutput.scenario.loanDurationYears}
+                      onChange={(event) =>
+                        onUpdateScenario(scenarioOutput.scenario.id, {
+                          loanDurationYears: Number(event.target.value),
+                        })
+                      }
+                    />
+                  ) : (
+                    <span>{`${scenarioOutput.scenario.loanDurationYears} ans`}</span>
+                  )}
                 </td>
-                <td>
-                  <span>{formatPercent(scenarioOutput.output.summary.overallYearlyYield)}</span>
-                  <span className="rank-badge" title="Rang">
-                    {getRankBadge(overallYieldRanks.get(scenarioOutput) ?? 0)}
-                  </span>
+              ))}
+            </tr>
+
+            <tr>
+              <td>Taux prêt (%)</td>
+              {outputs.map((scenarioOutput) => (
+                <td key={`loan-rate-${scenarioOutput.scenario.id}`}>
+                  {scenarioOutput.scenario.editable ? (
+                    <input
+                      className="scenario-cell-input"
+                      type="number"
+                      min={INPUT_LIMITS.loanAnnualRate.min * 100}
+                      max={INPUT_LIMITS.loanAnnualRate.max * 100}
+                      step={0.01}
+                      value={asPercent(scenarioOutput.scenario.loanAnnualRate)}
+                      onChange={(event) =>
+                        onUpdateScenario(scenarioOutput.scenario.id, {
+                          loanAnnualRate: fromPercent(Number(event.target.value)),
+                        })
+                      }
+                    />
+                  ) : (
+                    <span>{formatPercent(scenarioOutput.scenario.loanAnnualRate)}</span>
+                  )}
                 </td>
-                <td>
-                  <span>{formatPercent(scenarioOutput.output.summary.overallYearlyYieldWithLatentGains)}</span>
-                  <span className="rank-badge" title="Rang">
-                    {getRankBadge(overallYieldWithLatentGainsRanks.get(scenarioOutput) ?? 0)}
-                  </span>
+              ))}
+            </tr>
+
+            <tr>
+              <td>Taux assurance (%)</td>
+              {outputs.map((scenarioOutput) => (
+                <td key={`insurance-rate-${scenarioOutput.scenario.id}`}>
+                  {scenarioOutput.scenario.editable ? (
+                    <input
+                      className="scenario-cell-input"
+                      type="number"
+                      min={INPUT_LIMITS.loanAnnualInsuranceRate.min * 100}
+                      max={INPUT_LIMITS.loanAnnualInsuranceRate.max * 100}
+                      step={0.01}
+                      value={asPercent(scenarioOutput.scenario.loanAnnualInsuranceRate)}
+                      onChange={(event) =>
+                        onUpdateScenario(scenarioOutput.scenario.id, {
+                          loanAnnualInsuranceRate: fromPercent(
+                            Number(event.target.value),
+                          ),
+                        })
+                      }
+                    />
+                  ) : (
+                    <span>
+                      {formatPercent(scenarioOutput.scenario.loanAnnualInsuranceRate)}
+                    </span>
+                  )}
                 </td>
-                <td className={scenarioOutput.output.summary.finalLatentProfit >= 0 ? 'positive' : 'negative'}>
-                  <span>{formatEuro(scenarioOutput.output.summary.finalLatentProfit)}</span>
-                  <span className="rank-badge" title="Rang">
-                    {getRankBadge(profitRanks.get(scenarioOutput) ?? 0)}
-                  </span>
-                </td>
-              </tr>
+              ))}
+            </tr>
+
+            {rows.map((row) => (
+              <ComparisonTableRow key={row.key} row={row} outputs={outputs} />
             ))}
           </tbody>
         </table>

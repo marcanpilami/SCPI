@@ -14,6 +14,7 @@ import { simulateScpiInvestment } from './lib/scpiSimulation'
 import type { LoanScenario, SimulationInput } from './types/simulation'
 
 const STORAGE_KEY_SIMULATION_INPUT = 'scpi:simulation-input'
+const STORAGE_KEY_LOAN_SCENARIOS = 'scpi:loan-scenarios'
 
 function readPersistedSimulationInput(): SimulationInput {
   if (typeof window === 'undefined') {
@@ -40,17 +41,39 @@ function readPersistedSimulationInput(): SimulationInput {
   }
 }
 
+function readPersistedLoanScenarios(): LoanScenario[] {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LOAN_SCENARIOS
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_LOAN_SCENARIOS)
+    if (!raw) {
+      return DEFAULT_LOAN_SCENARIOS
+    }
+
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return DEFAULT_LOAN_SCENARIOS
+    }
+
+    return parsed as LoanScenario[]
+  } catch {
+    return DEFAULT_LOAN_SCENARIOS
+  }
+}
+
 function App() {
   const [input, setInput] = useState<SimulationInput>(() =>
     readPersistedSimulationInput(),
   )
   const [showDetailed, setShowDetailed] = useState(false)
   const [showDisclaimer, setShowDisclaimer] = useState(true)
-  const [loanScenarios, setLoanScenarios] = useState<LoanScenario[]>(
-    DEFAULT_LOAN_SCENARIOS,
+  const [showPrivacyNotice, setShowPrivacyNotice] = useState(true)
+  const [loanScenarios, setLoanScenarios] = useState<LoanScenario[]>(() =>
+    readPersistedLoanScenarios(),
   )
 
-  const simulation = useMemo(() => simulateScpiInvestment(input), [input])
   const withLoanSimulation = useMemo(
     () => simulateScpiInvestment({ ...input, useLoan: true }),
     [input],
@@ -59,10 +82,38 @@ function App() {
     () => simulateScpiInvestment({ ...input, useLoan: false }),
     [input],
   )
+  const simulation = useMemo(
+    () => (input.useLoan ? withLoanSimulation : withoutLoanSimulation),
+    [input.useLoan, withLoanSimulation, withoutLoanSimulation],
+  )
 
   const scenarioOutputs = useMemo(
-    () =>
-      loanScenarios.map((scenario) => ({
+    () => [
+      {
+        scenario: {
+          id: 'scenario-main',
+          name: 'Scénario principal',
+          editable: false,
+          downPaymentAmount: input.downPaymentAmount,
+          loanDurationYears: input.loanDurationYears,
+          loanAnnualRate: input.loanAnnualRate,
+          loanAnnualInsuranceRate: input.loanAnnualInsuranceRate,
+        },
+        output: simulation,
+      },
+      {
+        scenario: {
+          id: 'scenario-no-loan',
+          name: 'Sans prêt',
+          editable: false,
+          downPaymentAmount: input.investmentAmount,
+          loanDurationYears: 0,
+          loanAnnualRate: 0,
+          loanAnnualInsuranceRate: 0,
+        },
+        output: withoutLoanSimulation,
+      },
+      ...loanScenarios.map((scenario) => ({
         scenario,
         output: simulateScpiInvestment({
           ...input,
@@ -73,7 +124,9 @@ function App() {
           loanAnnualInsuranceRate: scenario.loanAnnualInsuranceRate,
         }),
       })),
-    [input, loanScenarios],
+     
+    ],
+    [input, loanScenarios, simulation, withoutLoanSimulation],
   )
 
   useEffect(() => {
@@ -84,22 +137,31 @@ function App() {
     }
   }, [input])
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY_LOAN_SCENARIOS, JSON.stringify(loanScenarios))
+    } catch {
+      // Ignore persistence issues
+    }
+  }, [loanScenarios])
+
   function handleExportCsv(): void {
     const csv = buildYearlyResultsCsv(simulation.yearlyResults)
     downloadCsv(csv, 'projection-scpi.csv')
   }
 
-  function handleAddScenarioFromCurrent(): void {
+  function handleAddNewScenario(): void {
     const nextIndex = loanScenarios.length + 1
     setLoanScenarios((current) => [
       ...current,
       {
         id: `scenario-${Date.now()}-${nextIndex}`,
-        name: `Scenario ${nextIndex}`,
-        downPaymentAmount: input.downPaymentAmount,
-        loanDurationYears: input.loanDurationYears,
-        loanAnnualRate: input.loanAnnualRate,
-        loanAnnualInsuranceRate: input.loanAnnualInsuranceRate,
+        name: `Scénario ${nextIndex}`,
+        editable: true,
+        downPaymentAmount: DEFAULT_SIMULATION_INPUT.downPaymentAmount,
+        loanDurationYears: DEFAULT_SIMULATION_INPUT.loanDurationYears,
+        loanAnnualRate: DEFAULT_SIMULATION_INPUT.loanAnnualRate,
+        loanAnnualInsuranceRate: DEFAULT_SIMULATION_INPUT.loanAnnualInsuranceRate,
       },
     ])
   }
@@ -113,13 +175,17 @@ function App() {
   }
 
   function handleRemoveScenario(id: string): void {
-    setLoanScenarios((current) => current.filter((scenario) => scenario.id !== id))
+    setLoanScenarios((current) =>
+      current.filter((scenario) => !(scenario.id === id && scenario.editable)),
+    )
   }
 
   function handleResetInput(): void {
     setInput(DEFAULT_SIMULATION_INPUT)
+    setLoanScenarios(DEFAULT_LOAN_SCENARIOS)
     try {
       window.localStorage.removeItem(STORAGE_KEY_SIMULATION_INPUT)
+      window.localStorage.removeItem(STORAGE_KEY_LOAN_SCENARIOS)
     } catch {
       // Ignore persistence issues
     }
@@ -129,9 +195,9 @@ function App() {
     <main className="app-shell">
       <header className="hero">
         <p className="kicker">Simulateur</p>
-        <h1>Rentabilité d&apos;un investissement SCPI en France</h1>
+        <h1>Rentabilité d&apos;un investissement SCPI</h1>
         <p className="hero-text">
-          Projection annuelle incluant remboursement bancaire, effort d&apos;épargne, fiscalité, valorisation des actifs et résultat global.
+          Projection annuelle incluant remboursement bancaire, mélange de SCPI françaises et européennes, effort d&apos;épargne, fiscalité, valorisation des actifs et résultat global.
         </p>
       </header>
 
@@ -176,25 +242,45 @@ function App() {
         </div>
       )}
 
+      {showPrivacyNotice && (
+        <div className="privacy-notice" role="note">
+          <div className="privacy-notice-body">
+            <strong>Sécurité de vos données</strong>
+            <p>
+              Les calculs sont effectués entièrement dans votre navigateur. Aucune donnée n'est envoyée 
+              à un serveur : vos paramètres et résultats restent localement sur votre appareil.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="privacy-notice-close"
+            aria-label="Fermer la notice de sécurité"
+            onClick={() => setShowPrivacyNotice(false)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <SimulationForm input={input} onChange={setInput} onReset={handleResetInput} />
       <SimulationSummary summary={simulation.summary} />
-      <LoanModeComparison
-        withLoan={withLoanSimulation}
-        withoutLoan={withoutLoanSimulation}
-      />
+      <ProjectionChart rows={simulation.yearlyResults} />
       <ScenarioComparison
         scenarios={loanScenarios}
         outputs={scenarioOutputs}
-        onAddFromCurrent={handleAddScenarioFromCurrent}
+        onAddFromCurrent={handleAddNewScenario}
         onUpdateScenario={handleUpdateScenario}
         onRemoveScenario={handleRemoveScenario}
       />
-      <ProjectionChart rows={simulation.yearlyResults} />
       <YearlyResultsTable
         rows={simulation.yearlyResults}
         showDetailed={showDetailed}
         onToggleDetailed={setShowDetailed}
         onExportCsv={handleExportCsv}
+      />
+      <LoanModeComparison
+        withLoan={withLoanSimulation}
+        withoutLoan={withoutLoanSimulation}
       />
     </main>
   )

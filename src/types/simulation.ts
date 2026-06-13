@@ -19,10 +19,27 @@ export interface SimulationInput {
 export interface LoanScenario {
   id: string
   name: string
+  editable: boolean
   downPaymentAmount: number
   loanDurationYears: number
   loanAnnualRate: number
   loanAnnualInsuranceRate: number
+}
+
+export interface ScpiDatabaseEntry {
+  id: string
+  name: string
+  organization: string
+  enjoymentDelayMonths: number
+  subscriptionFeeRate: number
+  managementFeeRate: number
+  distributionFrequency: string
+  franceShareRate: number
+  sharePurchasePrice: number
+  distributionRate: number
+  pgaRate: number
+  irr10Years: number
+  creationYear: number
 }
 
 export interface LoanYearlyBreakdown {

@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { INPUT_LIMITS } from '../config/constants'
+import { ScpiPortfolioPanel } from './ScpiPortfolioPanel'
 import type { SimulationInput } from '../types/simulation'
 
 interface SimulationFormProps {
@@ -57,11 +59,18 @@ function NumberField({
 }
 
 export function SimulationForm({ input, onChange, onReset }: SimulationFormProps) {
+  const [resetSignal, setResetSignal] = useState(0)
+
   const update = <K extends keyof SimulationInput>(key: K, value: SimulationInput[K]) => {
     onChange({
       ...input,
       [key]: value,
     })
+  }
+
+  function handleResetClick(): void {
+    setResetSignal((current) => current + 1)
+    onReset?.()
   }
 
   return (
@@ -77,7 +86,7 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={onReset}
+            onClick={handleResetClick}
             title="Restaurer les paramètres par défaut et effacer l'historique sauvegardé"
           >
             Réinitialiser
@@ -86,8 +95,6 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
       </div>
 
       <div className="form-groups">
-
-        {/* Prêt bancaire */}
         <fieldset className="form-group">
           <legend className="form-group-legend">Prêt bancaire</legend>
           <div className="form-grid">
@@ -151,9 +158,9 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
           </div>
         </fieldset>
 
-        {/* SCPI */}
         <fieldset className="form-group">
           <legend className="form-group-legend">SCPI &amp; investissement</legend>
+          <ScpiPortfolioPanel input={input} onChange={onChange} resetSignal={resetSignal} />
           <div className="form-grid">
             <NumberField
               id="investmentAmount"
@@ -167,17 +174,6 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
             />
 
             <NumberField
-              id="subscriptionFeeRate"
-              label="Frais de souscription"
-              value={asPercent(input.subscriptionFeeRate)}
-              min={INPUT_LIMITS.subscriptionFeeRate.min * 100}
-              max={INPUT_LIMITS.subscriptionFeeRate.max * 100}
-              step={0.01}
-              suffix="%"
-              onChange={(value) => update('subscriptionFeeRate', fromPercent(value))}
-            />
-
-            <NumberField
               id="otherInitialExpenses"
               label="Autres frais initiaux"
               value={input.otherInitialExpenses}
@@ -186,6 +182,28 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               step={100}
               suffix="EUR"
               onChange={(value) => update('otherInitialExpenses', value)}
+            />
+
+            <NumberField
+              id="horizonYears"
+              label="Horizon de simulation"
+              value={input.horizonYears}
+              min={INPUT_LIMITS.horizonYears.min}
+              max={INPUT_LIMITS.horizonYears.max}
+              step={1}
+              suffix="ans"
+              onChange={(value) => update('horizonYears', value)}
+            />
+            
+            <NumberField
+              id="subscriptionFeeRate"
+              label="Frais de souscription"
+              value={asPercent(input.subscriptionFeeRate)}
+              min={INPUT_LIMITS.subscriptionFeeRate.min * 100}
+              max={INPUT_LIMITS.subscriptionFeeRate.max * 100}
+              step={0.01}
+              suffix="%"
+              onChange={(value) => update('subscriptionFeeRate', fromPercent(value))}
             />
 
             <NumberField
@@ -220,21 +238,9 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               suffix="%"
               onChange={(value) => update('annualRevaluationRate', fromPercent(value))}
             />
-
-            <NumberField
-              id="horizonYears"
-              label="Horizon de simulation"
-              value={input.horizonYears}
-              min={INPUT_LIMITS.horizonYears.min}
-              max={INPUT_LIMITS.horizonYears.max}
-              step={1}
-              suffix="ans"
-              onChange={(value) => update('horizonYears', value)}
-            />
           </div>
         </fieldset>
 
-        {/* Fiscalite */}
         <fieldset className="form-group">
           <legend className="form-group-legend">Fiscalite</legend>
           <div className="form-grid">
@@ -272,7 +278,6 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
             />
           </div>
         </fieldset>
-
       </div>
     </section>
   )
