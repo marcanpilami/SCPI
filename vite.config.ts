@@ -18,7 +18,7 @@ export default defineConfig({
         theme_color: '#0f766e',
         background_color: '#f7f3ea',
         display: 'standalone',
-        start_url: '/',
+        start_url: process.env.GITHUB_ACTIONS ? '/SCPI/' : '/',
         icons: [
           {
             src: 'pwa-192x192.png',
