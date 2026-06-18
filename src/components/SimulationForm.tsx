@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { INPUT_LIMITS } from '../config/constants'
+import { formatNumberInput } from '../lib/format'
 import { ScpiPortfolioPanel } from './ScpiPortfolioPanel'
 import type { SimulationInput } from '../types/simulation'
 
@@ -38,6 +39,18 @@ function NumberField({
   onChange: (value: number) => void
   disabled?: boolean
 }) {
+  const [valueAsString, setValueAsString] = useState(formatNumberInput(value, value.toString(), step))
+
+  const handleChangeInternal = (event : React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.value
+    const parsed = Number(newValue)
+    if (Number.isFinite(parsed)) {
+      const formatted = formatNumberInput(parsed, newValue, step)
+      setValueAsString(formatted)
+      onChange(parsed)
+    }
+  }
+
   return (
     <label className="field" htmlFor={id}>
       <span className="field-label">{label}</span>
@@ -48,9 +61,9 @@ function NumberField({
           min={min}
           max={max}
           step={step}
-          value={Number.isFinite(value) ? value : ''}
+          value={valueAsString}
           disabled={disabled}
-          onChange={(event) => onChange(Number(event.target.value))}
+          onChange={handleChangeInternal}
         />
         <span className="field-suffix">{suffix}</span>
       </span>
@@ -154,7 +167,7 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               value={input.downPaymentAmount}
               min={INPUT_LIMITS.downPaymentAmount.min}
               max={INPUT_LIMITS.downPaymentAmount.max}
-              step={500}
+              step={1000}
               suffix="EUR"
               disabled={!input.useLoan}
               onChange={(value) => update('downPaymentAmount', value)}
@@ -242,7 +255,7 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               value={asPercent(input.annualRevaluationRate)}
               min={INPUT_LIMITS.annualRevaluationRate.min * 100}
               max={INPUT_LIMITS.annualRevaluationRate.max * 100}
-              step={0.1}
+              step={0.01}
               suffix="%"
               onChange={(value) => update('annualRevaluationRate', fromPercent(value))}
             />
@@ -264,17 +277,6 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
           <legend className="form-group-legend">Fiscalité</legend>
           <div className="form-grid">
             <NumberField
-              id="taxBracketRate"
-              label="Taux marginal d'imposition (TMI)"
-              value={asPercent(input.taxBracketRate)}
-              min={INPUT_LIMITS.taxBracketRate.min * 100}
-              max={INPUT_LIMITS.taxBracketRate.max * 100}
-              step={0.1}
-              suffix="%"
-              onChange={(value) => update('taxBracketRate', fromPercent(value))}
-            />
-
-            <NumberField
               id="foreignTaxRate"
               label="Taux d'imposition hors France moyen"
               value={asPercent(input.foreignTaxRate)}
@@ -283,6 +285,28 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
               step={0.1}
               suffix="%"
               onChange={(value) => update('foreignTaxRate', fromPercent(value))}
+            />
+
+            <NumberField
+              id="nonScpiRevenues"
+              label="Revenus imposables hors SCPI"
+              value={input.nonScpiRevenues}
+              min={INPUT_LIMITS.nonScpiRevenues.min}
+              max={INPUT_LIMITS.nonScpiRevenues.max}
+              step={1000}
+              suffix="EUR"
+              onChange={(value) => update('nonScpiRevenues', value)}
+            />
+
+            <NumberField
+              id="nonScpiTaxDeductions"
+              label="Déductions revenu imposable hors SCPI"
+              value={input.nonScpiTaxDeductions}
+              min={INPUT_LIMITS.nonScpiTaxDeductions.min}
+              max={INPUT_LIMITS.nonScpiTaxDeductions.max}
+              step={1000}
+              suffix="EUR"
+              onChange={(value) => update('nonScpiTaxDeductions', value)}
             />
           </div>
         </fieldset>

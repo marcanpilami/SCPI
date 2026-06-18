@@ -9,11 +9,12 @@ export interface SimulationInput {
   distributionRate: number
   subscriptionFeeRate: number
   investmentAmount: number
-  taxBracketRate: number
   revenueInFranceRate: number
   foreignTaxRate: number
   annualRevaluationRate: number
   horizonYears: number
+  nonScpiRevenues: number
+  nonScpiTaxDeductions: number
 }
 
 export interface LoanScenario {
@@ -53,23 +54,47 @@ export interface LoanYearlyBreakdown {
 export interface YearlyResult {
   year: number;
   grossRents: number;
+  grossRentsInFrance: number;
+  grossRentsAbroad: number;
   annualYield: number;
-  taxableIncomeInFrance: number;
-  taxableIncomeAbroad: number;
-  taxesPaidInFrance: number;
-  taxesPaidAbroad: number;
+  fiscalLandRevenueInFrance: number;
+  fiscalLandRevenueAbroad: number;
+  landDeficitInFrance: number;
+  landDeficitUsedInFrance: number;
+  scpiTaxesPaidAbroad: number;
   bankCapitalRepaid: number;
   bankInterestPaid: number;
+  bankInterestPaidInFrance: number;
+  bankInterestPaidAbroad: number;
+  loanInsurancePaidInFrance: number;
+  loanInsurancePaidAbroad: number;
   bankReimbursementTotal: number;
   loanInsurancePaid: number;
   loanRemainingCapital: number;
-  taxesPaid: number;
+  scpiTaxesPaid: number;
+  scpiAverageTaxRate: number;
   effortAmount: number;
   endOfYearFixedAssetsValuation: number;
   endOfYearCashValuation: number;
   endOfYearValuation: number;
   endOfyearCapital: number;
   endofYearLatentProfit: number;
+  nonScpiTaxableIncome: number;
+  nonScpiTaxableIncomeDeductions: number;
+  worldGrossIncome: number;
+  worldTaxableIncome: number;
+  worldAverageTaxRate: number;
+  theoreticalTaxesOnWorldInFrance: number;
+  allIncomeTaxesPaidInFrance: number;
+  socialContributionsFrance: number;
+  frenchTaxCreditToRemoveDoubleTaxes: number;
+  scpiFullFrenchScenarioTotalTaxes: number;
+  scpiFullFrenchScenarioFiscalImpact: number;
+  scpiFullFrenchScenarioAverageTaxRate: number;
+  scpiFullFrenchScenarioAverageScpiTaxRate: number;
+  yearlyTotalTaxesPaid: number;
+  franceTheoreticalAverageIncomeTaxRate: number;
+  franceAverageIncomeTaxRate: number;
 }
 
 export interface SimulationSummary {
@@ -95,4 +120,16 @@ export interface SimulationSummary {
 export interface SimulationOutput {
   yearlyResults: YearlyResult[]
   summary: SimulationSummary
+}
+
+export interface TaxResult {
+  averageTaxRate: number;
+  totalTaxesPaid: number;
+  brackets: TaxBracketResult[];
+}
+
+export interface TaxBracketResult {
+  bracketRate: number;
+  incomeInBracket: number;
+  taxesPaidInBracket: number;
 }

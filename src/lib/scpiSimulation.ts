@@ -10,6 +10,7 @@ import type {
   SimulationOutput,
   YearlyResult,
 } from '../types/simulation'
+import { taxSimulation } from './tax'
 
 function normalizeInput(rawInput: SimulationInput): SimulationInput {
   return {
@@ -59,11 +60,6 @@ function normalizeInput(rawInput: SimulationInput): SimulationInput {
       INPUT_LIMITS.investmentAmount.min,
       INPUT_LIMITS.investmentAmount.max,
     ),
-    taxBracketRate: clamp(
-      rawInput.taxBracketRate,
-      INPUT_LIMITS.taxBracketRate.min,
-      INPUT_LIMITS.taxBracketRate.max,
-    ),
     revenueInFranceRate: clamp(
       rawInput.revenueInFranceRate,
       INPUT_LIMITS.revenueInFranceRate.min,
@@ -83,6 +79,16 @@ function normalizeInput(rawInput: SimulationInput): SimulationInput {
       rawInput.horizonYears,
       INPUT_LIMITS.horizonYears.min,
       INPUT_LIMITS.horizonYears.max,
+    ),
+    nonScpiRevenues: clamp(
+      rawInput.nonScpiRevenues,
+      INPUT_LIMITS.nonScpiRevenues.min,
+      INPUT_LIMITS.nonScpiRevenues.max,
+    ),
+    nonScpiTaxDeductions: clamp(
+      rawInput.nonScpiTaxDeductions,
+      INPUT_LIMITS.nonScpiTaxDeductions.min,
+      INPUT_LIMITS.nonScpiTaxDeductions.max,
     ),
   }
 }
@@ -126,11 +132,10 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
 
   const yearlyResults: YearlyResult[] = []
 
-  const totalTaxRateFrance = input.taxBracketRate + SOCIAL_CONTRIBUTIONS_RATE
-
   for (let year = 1; year <= input.horizonYears; year += 1) {
     const loan = loanSchedule[year - 1] ?? emptyLoanBreakdown(year)
 
+    // Revenues
     const monthStart = (year - 1) * 12
     const monthEnd = year * 12
     const rentableMonthsUntilStart = Math.max(0, monthStart - input.enjoymentDelayMonths)
@@ -139,63 +144,149 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
     const rentProration = rentMonthsInYear / 12
 
     const grossRents = rentComputationBase * input.distributionRate * rentProration;
-    const deductibleCharges =
-      (loan.interestPaid + loan.insurancePaid) * input.revenueInFranceRate;
+    const grossRentsInFrance = grossRents * input.revenueInFranceRate
+    const grossRentsAbroad = grossRents * (1 - input.revenueInFranceRate)
     
-    const revenueInFrance = grossRents * input.revenueInFranceRate
-    const revenueAbroad = grossRents * (1 - input.revenueInFranceRate)
+    // TAXES
+    const bankInterestPaidInFrance = loan.interestPaid * input.revenueInFranceRate;
+    const bankInterestPaidAbroad = loan.interestPaid * (1 - input.revenueInFranceRate);
+
+    const loanInsurancePaidInFrance = loan.insurancePaid * input.revenueInFranceRate;
+    const loanInsurancePaidAbroad = loan.insurancePaid * (1 - input.revenueInFranceRate);
+
+    const landDeficitUsedInFrance = yearlyResults.length > 0
+      ? yearlyResults[yearlyResults.length - 1].landDeficitInFrance
+      : 0;
+    const landRevenueInFrance =
+      grossRentsInFrance -
+      bankInterestPaidInFrance -
+      loanInsurancePaidInFrance -
+      landDeficitUsedInFrance;
+    const landRevenueAbroad = grossRentsAbroad - bankInterestPaidAbroad - loanInsurancePaidAbroad;
+
+    const fiscalLandRevenueInFrance = Math.max(0, landRevenueInFrance);
+    const fiscalLandRevenueAbroad = Math.max(0, landRevenueAbroad);
+
+    const landDeficitInFrance = Math.max(0, -landRevenueInFrance);
     
-    const taxableIncomeInFrance = Math.max(0, revenueInFrance - deductibleCharges)
-    const taxableIncomeAbroad = Math.max(0, revenueAbroad)
+    const worldGrossIncome =
+      grossRents +
+      input.nonScpiRevenues;
+    const worldTaxableIncome =
+      fiscalLandRevenueInFrance +
+      fiscalLandRevenueAbroad +
+      input.nonScpiRevenues -
+      input.nonScpiTaxDeductions;
+    const frenchTaxSimulationWithAllIncome = taxSimulation(worldTaxableIncome);
+    const franceTheoreticalAverageIncomeTaxRate = frenchTaxSimulationWithAllIncome.averageTaxRate;
+    const frenchTaxCreditToRemoveDoubleTaxes = Math.max(
+      0,
+      fiscalLandRevenueAbroad * franceTheoreticalAverageIncomeTaxRate,
+    );
+    const allIncomeTaxesPaidInFrance = frenchTaxSimulationWithAllIncome.totalTaxesPaid - frenchTaxCreditToRemoveDoubleTaxes;
+    const franceAverageIncomeTaxRate = allIncomeTaxesPaidInFrance / worldTaxableIncome;
     
-    const taxesPaidInFrance = taxableIncomeInFrance * totalTaxRateFrance
-    const taxesPaidAbroad = taxableIncomeAbroad * input.foreignTaxRate
-    const taxesPaid = taxesPaidInFrance + taxesPaidAbroad
-
-    const bankReimbursementTotal = loan.capitalPaid + loan.interestPaid
-    const effortAmount = bankReimbursementTotal - (grossRents - taxesPaid)
-
-    endOfyearCapital += Math.max(0, effortAmount)
+    const socialContributionsFrance = fiscalLandRevenueInFrance * SOCIAL_CONTRIBUTIONS_RATE;
     
-    const annualYield = endOfyearCapital > 0
-    ? - effortAmount / endOfyearCapital
-    : 0
+    const scpiTaxesPaidAbroad = fiscalLandRevenueAbroad * input.foreignTaxRate;
 
-    cashValuation += grossRents - taxesPaid - bankReimbursementTotal + Math.max(0, effortAmount);
-    const endOfYearCashValuation = cashValuation;
-
-    const endOfYearFixedAssetsValuation =
-      assetValueStartOfYear * (1 + input.annualRevaluationRate)
+    const yearlyTotalTaxesPaid = allIncomeTaxesPaidInFrance + scpiTaxesPaidAbroad + socialContributionsFrance;
+    const worldAverageTaxRate = yearlyTotalTaxesPaid / worldGrossIncome;
     
-    const endOfYearValuation =
-      endOfYearFixedAssetsValuation -
-      loan.remainingCapital +
-      endOfYearCashValuation;
+    // Comparison with taxes without SCPIs
+    const taxSimulationWithoutScpi = taxSimulation(
+      input.nonScpiRevenues - input.nonScpiTaxDeductions,
+    );
+    const yearlyTotalTaxesPaidWithoutScpi = taxSimulationWithoutScpi.totalTaxesPaid + 0; // 0 Social taxes.
+    const scpiTaxesPaid = yearlyTotalTaxesPaid - yearlyTotalTaxesPaidWithoutScpi; // total fiscal impact of SCPI.
+    const scpiAverageTaxRate = scpiTaxesPaid / grossRents;
 
-    const endofYearLatentProfit = endOfYearValuation - endOfyearCapital
+    // Comparison with taxes with all SCPI in France
+    const fullFrenchScenarioTaxableLandRevenue = grossRents - loan.interestPaid - loan.insurancePaid;
+    const fullFrenchScenarioTaxableIncome =
+      fullFrenchScenarioTaxableLandRevenue +
+      input.nonScpiRevenues -
+      input.nonScpiTaxDeductions      ;
+    const fullFrenchScenarioTaxSimulation = taxSimulation(fullFrenchScenarioTaxableIncome);
+    const scpiFullFrenchScenarioTotalTaxes = fullFrenchScenarioTaxSimulation.totalTaxesPaid + fullFrenchScenarioTaxableLandRevenue * SOCIAL_CONTRIBUTIONS_RATE;
+    const scpiFullFrenchScenarioFiscalImpact = scpiFullFrenchScenarioTotalTaxes - yearlyTotalTaxesPaid;
+    const scpiFullFrenchScenarioAverageTaxRate = scpiFullFrenchScenarioTotalTaxes / worldGrossIncome;
+    const scpiFullFrenchScenarioAverageScpiTaxRate = (scpiFullFrenchScenarioTotalTaxes - yearlyTotalTaxesPaidWithoutScpi) / grossRents;
+    
+    // Effort
+     const bankReimbursementTotal = loan.capitalPaid + loan.interestPaid;
+     const effortAmount = bankReimbursementTotal + scpiTaxesPaid + loan.insurancePaid - grossRents;
 
-    rentComputationBase *= (1 + input.annualRevaluationRate)
+     endOfyearCapital += Math.max(0, effortAmount);
+
+     const annualYield =
+       endOfyearCapital > 0 ? -effortAmount / endOfyearCapital : 0;
+
+     cashValuation +=
+       grossRents -
+       scpiTaxesPaid -
+       loan.insurancePaid -
+       bankReimbursementTotal +
+       Math.max(0, effortAmount);
+     const endOfYearCashValuation = cashValuation;
+
+     const endOfYearFixedAssetsValuation =
+       assetValueStartOfYear * (1 + input.annualRevaluationRate);
+
+     const endOfYearValuation =
+       endOfYearFixedAssetsValuation -
+       loan.remainingCapital +
+       endOfYearCashValuation;
+
+     const endofYearLatentProfit = endOfYearValuation - endOfyearCapital;
+
+     rentComputationBase *= 1 + input.annualRevaluationRate;
+
 
     yearlyResults.push({
       year,
       grossRents,
       annualYield,
-      taxableIncomeInFrance,
-      taxableIncomeAbroad,
-      taxesPaidInFrance,
-      taxesPaidAbroad,
+      scpiTaxesPaidAbroad,
+      scpiTaxesPaid,
       bankCapitalRepaid: loan.capitalPaid,
       bankInterestPaid: loan.interestPaid,
       bankReimbursementTotal,
       loanInsurancePaid: loan.insurancePaid,
       loanRemainingCapital: loan.remainingCapital,
-      taxesPaid,
       effortAmount,
       endOfYearFixedAssetsValuation,
       endOfYearCashValuation,
       endOfYearValuation,
       endOfyearCapital,
       endofYearLatentProfit,
+      worldGrossIncome,
+      worldAverageTaxRate,
+      frenchTaxCreditToRemoveDoubleTaxes,
+      allIncomeTaxesPaidInFrance,
+      nonScpiTaxableIncomeDeductions: input.nonScpiTaxDeductions,
+      worldTaxableIncome,
+      theoreticalTaxesOnWorldInFrance: frenchTaxSimulationWithAllIncome.totalTaxesPaid,
+      grossRentsInFrance,
+      grossRentsAbroad: grossRentsAbroad,
+      nonScpiTaxableIncome: input.nonScpiRevenues,
+      bankInterestPaidInFrance,
+      bankInterestPaidAbroad,
+      landDeficitInFrance,
+      fiscalLandRevenueInFrance,
+      fiscalLandRevenueAbroad,
+      landDeficitUsedInFrance,
+      loanInsurancePaidInFrance,
+      loanInsurancePaidAbroad,
+      socialContributionsFrance,
+      yearlyTotalTaxesPaid,
+      franceTheoreticalAverageIncomeTaxRate,
+      franceAverageIncomeTaxRate,
+      scpiAverageTaxRate,
+      scpiFullFrenchScenarioTotalTaxes,
+      scpiFullFrenchScenarioFiscalImpact,
+      scpiFullFrenchScenarioAverageTaxRate,
+      scpiFullFrenchScenarioAverageScpiTaxRate,
     });
 
     assetValueStartOfYear = endOfYearFixedAssetsValuation
@@ -205,7 +296,7 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
     (acc, row) => {
       acc.totalRents += row.grossRents;
       acc.totalBankReimbursement += row.bankReimbursementTotal;
-      acc.totalTaxes += row.taxesPaid;
+      acc.totalTaxes += row.scpiTaxesPaid;
       acc.totalFees += row.bankInterestPaid;
       return acc;
     },
@@ -251,7 +342,7 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
     ? repaymentReferenceRow.endOfYearFixedAssetsValuation / repaymentReferenceRow.endOfyearCapital
     : 0
   summary.annualIncomeAfterLoan = incomeAfterLoanRow
-    ? incomeAfterLoanRow.grossRents - incomeAfterLoanRow.taxesPaid
+    ? incomeAfterLoanRow.grossRents - incomeAfterLoanRow.scpiTaxesPaid
     : 0
   summary.yieldAtEndOfSimulation = yearlyResults[yearlyResults.length - 1]
     ? yearlyResults[yearlyResults.length - 1].annualYield

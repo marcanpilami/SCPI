@@ -10,15 +10,16 @@ export const INPUT_LIMITS = {
   loanAnnualInsuranceRate: { min: 0, max: 0.03 },
   otherInitialExpenses: { min: 0, max: 1000000 },
   enjoymentDelayMonths: { min: 0, max: 24 },
-  distributionRate: { min: 0, max: 0.15 },
+  distributionRate: { min: 0, max: 0.20 },
   subscriptionFeeRate: { min: 0, max: 0.25 },
   investmentAmount: { min: 1000, max: 10000000 },
-  taxBracketRate: { min: 0, max: 0.45 },
   revenueInFranceRate: { min: 0, max: 1 },
   foreignTaxRate: { min: 0, max: 1 },
   annualRevaluationRate: { min: -0.05, max: 0.08 },
   horizonYears: { min: 1, max: 40 },
-} as const
+  nonScpiRevenues : { min: 0, max: 10000000 },
+  nonScpiTaxDeductions : { min: 0, max: 10000000 },
+} as const;
 
 export const DEFAULT_SIMULATION_INPUT: SimulationInput = {
   useLoan: true,
@@ -31,11 +32,12 @@ export const DEFAULT_SIMULATION_INPUT: SimulationInput = {
   distributionRate: 0.060,
   subscriptionFeeRate: 0.1,
   investmentAmount: 200000,
-  taxBracketRate: 0.41,
   revenueInFranceRate: 0.179,
   foreignTaxRate: 0.20,
   annualRevaluationRate: 0.003,
   horizonYears: 30,
+  nonScpiRevenues: 80000,
+  nonScpiTaxDeductions: 0,
 }
 
 export const DEFAULT_LOAN_SCENARIOS: LoanScenario[] = [
@@ -66,6 +68,13 @@ export const DEFAULT_LOAN_SCENARIOS: LoanScenario[] = [
     loanAnnualRate: 0.043,
     loanAnnualInsuranceRate: 0.003,
   },
+];
+
+export const FRENCH_TAX_BRACKETS = [
+  { rate: 0.11, threshold: 29579 },
+  { rate: 0.30, threshold: 84577 },
+  { rate: 0.41, threshold: 181917 },
+  { rate: 0.45, threshold: Infinity },
 ];
 
 export const DEFAULT_SCPI_DATABASE: ScpiDatabaseEntry[] = [

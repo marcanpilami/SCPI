@@ -5,6 +5,7 @@ import { ProjectionChart } from './components/ProjectionChart'
 import { SimulationForm } from './components/SimulationForm'
 import { SimulationSummary } from './components/SimulationSummary'
 import { YearlyResultsTable } from './components/YearlyResultsTable'
+import { YearlyTaxResultTable } from './components/YearlyTaxResultTable'
 import {
   DEFAULT_LOAN_SCENARIOS,
   DEFAULT_SIMULATION_INPUT,
@@ -281,6 +282,9 @@ function App() {
       <LoanModeComparison
         withLoan={withLoanSimulation}
         withoutLoan={withoutLoanSimulation}
+      />
+      <YearlyTaxResultTable
+        rows={simulation.yearlyResults}
       />
     </main>
   )

@@ -22,6 +22,8 @@ export function YearlyResultsTable({
           <p className="panel-subtitle">
             Vue standard avec export CSV, ou mode audit pour voir les flux fiscaux.
 
+            Pour le détail des impôts, voir le tableau fiscal ci-dessous.
+
             <br/>Le profit cumulé est la somme des profits (loyers moins impôts moins effort) de toutes les années précédentes ajouté à la plus value latente des parts.
           </p>
         </div>
@@ -47,9 +49,7 @@ export function YearlyResultsTable({
             <tr>
               <th>Année</th>
               <th>Loyers perçus</th>
-              {showDetailed && <th>Revenu imposable France</th>}
               {showDetailed && <th>Impôts France</th>}
-              {showDetailed && <th>Revenu imposable monde</th>}
               {showDetailed && <th>Impôts monde</th>}
               <th>Impôts totaux</th>
               <th>Remboursé banque</th>
@@ -68,12 +68,14 @@ export function YearlyResultsTable({
             {rows.map((row) => (
               <tr key={row.year}>
                 <td>{row.year}</td>
-                <td>{formatEuro(row.grossRents)}</td>
-                {showDetailed && <td>{formatEuro(row.taxableIncomeInFrance)}</td>}
-                {showDetailed && <td>{formatEuro(row.taxesPaidInFrance)}</td>}
-                {showDetailed && <td>{formatEuro(row.taxableIncomeAbroad)}</td>}
-                {showDetailed && <td>{formatEuro(row.taxesPaidAbroad)}</td>}
-                <td>{formatEuro(row.taxesPaid)}</td>
+                <td>
+                    {formatEuro(row.grossRents)}
+                    <span className="subcell">FR {formatEuro(row.grossRentsInFrance)}</span>
+                    <span className="subcell">Monde {formatEuro(row.grossRentsAbroad)}</span>
+                </td>
+                {showDetailed && <td>{formatEuro(row.scpiTaxesPaid - row.scpiTaxesPaidAbroad)}</td>}
+                {showDetailed && <td>{formatEuro(row.scpiTaxesPaidAbroad)}</td>}
+                <td>{formatEuro(row.scpiTaxesPaid)}</td>
                 <td>
                   {formatEuro(row.bankReimbursementTotal)}
                   <span className="subcell">

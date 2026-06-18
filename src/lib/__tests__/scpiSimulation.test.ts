@@ -29,7 +29,7 @@ describe('simulateScpiInvestment', () => {
       horizonYears: 3,
     })
 
-    expect(output.yearlyResults.some((row) => row.taxesPaid > 0)).toBe(true)
+    expect(output.yearlyResults.some((row) => row.scpiTaxesPaid > 0)).toBe(true)
   })
 
   it('uses effort formula traite - (loyers - impôts)', () => {
@@ -42,7 +42,7 @@ describe('simulateScpiInvestment', () => {
 
     output.yearlyResults.forEach((row) => {
       const expectedEffort =
-        row.bankReimbursementTotal - (row.grossRents - row.taxesPaid)
+        row.bankReimbursementTotal - (row.grossRents - row.scpiTaxesPaid)
       expect(row.effortAmount).toBeCloseTo(expectedEffort, 8)
     })
   })
@@ -93,10 +93,10 @@ describe('simulateScpiInvestment', () => {
     output.yearlyResults.forEach((row) => {
       const totalRevenueInFrance = row.grossRents * 0.6
       const totalRevenueAbroad = row.grossRents * 0.4
-      expect(row.taxableIncomeInFrance).toBeLessThanOrEqual(totalRevenueInFrance)
-      expect(row.taxableIncomeAbroad).toBeCloseTo(totalRevenueAbroad, 2)
-      expect(row.taxesPaid).toBeCloseTo(
-        row.taxesPaidInFrance + row.taxesPaidAbroad,
+      expect(row.scpiTaxableIncomeInFrance).toBeLessThanOrEqual(totalRevenueInFrance)
+      expect(row.scpiTaxableIncomeAbroad).toBeCloseTo(totalRevenueAbroad, 2)
+      expect(row.scpiTaxesPaid).toBeCloseTo(
+        row.scpiTaxesPaidInFrance + row.scpiTaxesPaidAbroad,
         8,
       )
     })
