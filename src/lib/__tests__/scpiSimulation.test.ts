@@ -42,7 +42,7 @@ describe('simulateScpiInvestment', () => {
 
     output.yearlyResults.forEach((row) => {
       const expectedEffort =
-        row.bankReimbursementTotal - (row.grossRents - row.scpiTaxesPaid)
+        row.bankReimbursementTotal + row.scpiTaxesPaid + row.loanInsurancePaid - row.grossRents
       expect(row.effortAmount).toBeCloseTo(expectedEffort, 8)
     })
   })
@@ -93,12 +93,12 @@ describe('simulateScpiInvestment', () => {
     output.yearlyResults.forEach((row) => {
       const totalRevenueInFrance = row.grossRents * 0.6
       const totalRevenueAbroad = row.grossRents * 0.4
-      expect(row.scpiTaxableIncomeInFrance).toBeLessThanOrEqual(totalRevenueInFrance)
-      expect(row.scpiTaxableIncomeAbroad).toBeCloseTo(totalRevenueAbroad, 2)
-      expect(row.scpiTaxesPaid).toBeCloseTo(
-        row.scpiTaxesPaidInFrance + row.scpiTaxesPaidAbroad,
-        8,
-      )
+      expect(row.grossRentsInFrance).toBeCloseTo(totalRevenueInFrance, 8)
+      expect(row.grossRentsAbroad).toBeCloseTo(totalRevenueAbroad, 8)
+      expect(row.fiscalLandRevenueInFrance).toBeLessThanOrEqual(totalRevenueInFrance)
+      expect(row.fiscalLandRevenueAbroad).toBeLessThanOrEqual(totalRevenueAbroad)
+      expect(row.scpiTaxesPaid).toBeLessThanOrEqual(row.yearlyTotalTaxesPaid)
+      expect(row.scpiTaxesPaidAbroad).toBeLessThanOrEqual(row.scpiTaxesPaid)
     })
   })
 
