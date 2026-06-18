@@ -23,6 +23,16 @@ const STORAGE_KEY_SIMULATION_INPUT = 'scpi:simulation-input'
 const STORAGE_KEY_LOAN_SCENARIOS = 'scpi:loan-scenarios'
 const STORAGE_KEY_SCPI_PARAMETER_SCENARIOS = 'scpi:scpi-parameter-scenarios'
 
+const PAGE_MENU_SECTIONS = [
+  { id: 'section-form', label: 'Paramètres' },
+  { id: 'section-summary', label: 'Synthèse' },
+  { id: 'section-chart', label: 'Graphique' },
+  { id: 'section-loan-scenarios', label: 'Scénarios emprunt' },
+  { id: 'section-scpi-scenarios', label: 'Scénarios SCPI' },
+  { id: 'section-yearly-results', label: 'Projection annuelle' },
+  { id: 'section-yearly-tax', label: 'Projection fiscale' },
+] as const
+
 function readPersistedSimulationInput(): SimulationInput {
   if (typeof window === 'undefined') {
     return DEFAULT_SIMULATION_INPUT
@@ -326,6 +336,17 @@ function App() {
 
   return (
     <main className="app-shell">
+      <nav id="page-menu" className="page-menu" aria-label="Menu de navigation de la page">
+        <p className="page-menu-title">Menu</p>
+        <ul>
+          {PAGE_MENU_SECTIONS.map((section) => (
+            <li key={section.id}>
+              <a href={`#${section.id}`}>{section.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       <header className="hero">
         <p className="kicker">Simulateur</p>
         <h1>Rentabilité d&apos;un investissement SCPI</h1>
@@ -395,32 +416,48 @@ function App() {
         </div>
       )}
 
-      <SimulationForm input={input} onChange={setInput} onReset={handleResetInput} />
-      <SimulationSummary summary={simulation.summary} />
-      <ProjectionChart rows={simulation.yearlyResults} />
-      <ScenarioComparison
-        scenarios={loanScenarios}
-        outputs={scenarioOutputs}
-        onAddFromCurrent={handleAddNewScenario}
-        onUpdateScenario={handleUpdateScenario}
-        onRemoveScenario={handleRemoveScenario}
-      />
-      <ScpiParameterComparison
-        scenarios={scpiParameterScenarios}
-        outputs={scpiParameterOutputs}
-        onAddFromCurrent={handleAddNewScpiParameterScenario}
-        onUpdateScenario={handleUpdateScpiParameterScenario}
-        onRemoveScenario={handleRemoveScpiParameterScenario}
-      />
-      <YearlyResultsTable
-        rows={simulation.yearlyResults}
-        showDetailed={showDetailed}
-        onToggleDetailed={setShowDetailed}
-        onExportCsv={handleExportCsv}
-      />      
-      <YearlyTaxResultTable
-        rows={simulation.yearlyResults}
-      />      
+      <div id="section-form" className="menu-anchor-section">
+        <SimulationForm input={input} onChange={setInput} onReset={handleResetInput} />
+      </div>
+      <div id="section-summary" className="menu-anchor-section">
+        <SimulationSummary summary={simulation.summary} />
+      </div>
+      <div id="section-chart" className="menu-anchor-section">
+        <ProjectionChart rows={simulation.yearlyResults} />
+      </div>
+      <div id="section-loan-scenarios" className="menu-anchor-section">
+        <ScenarioComparison
+          scenarios={loanScenarios}
+          outputs={scenarioOutputs}
+          onAddFromCurrent={handleAddNewScenario}
+          onUpdateScenario={handleUpdateScenario}
+          onRemoveScenario={handleRemoveScenario}
+        />
+      </div>
+      <div id="section-scpi-scenarios" className="menu-anchor-section">
+        <ScpiParameterComparison
+          scenarios={scpiParameterScenarios}
+          outputs={scpiParameterOutputs}
+          onAddFromCurrent={handleAddNewScpiParameterScenario}
+          onUpdateScenario={handleUpdateScpiParameterScenario}
+          onRemoveScenario={handleRemoveScpiParameterScenario}
+        />
+      </div>
+      <div id="section-yearly-results" className="menu-anchor-section">
+        <YearlyResultsTable
+          rows={simulation.yearlyResults}
+          showDetailed={showDetailed}
+          onToggleDetailed={setShowDetailed}
+          onExportCsv={handleExportCsv}
+        />
+      </div>
+      <div id="section-yearly-tax" className="menu-anchor-section">
+        <YearlyTaxResultTable rows={simulation.yearlyResults} />
+      </div>
+
+      <a className="menu-fab" href="#page-menu" aria-label="Aller au menu" title="Aller au menu">
+        ≡
+      </a>
     </main>
   )
 }

@@ -32,11 +32,73 @@ body {
 }
 
 .app-shell {
-  width: min(1160px, 100% - 2rem);
+  width: min(1360px, 100% - 2rem);
   margin: 0 auto;
   padding: 2.25rem 0 3rem;
   display: grid;
+  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+  align-items: start;
   gap: 1.25rem;
+}
+
+.app-shell > :not(.page-menu):not(.menu-fab) {
+  grid-column: 2;
+}
+
+.page-menu {
+  position: sticky;
+  top: 1rem;
+  z-index: 2;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  padding: 0.7rem;
+}
+
+.page-menu-title {
+  margin: 0 0 0.45rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.page-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.page-menu a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.88rem;
+}
+
+.page-menu a:hover {
+  background: var(--accent-soft);
+  border-color: #b6ddd7;
+}
+
+.menu-anchor-section {
+  scroll-margin-top: 1rem;
+}
+
+.menu-fab {
+  display: none;
+}
+
+@media (min-width: 981px) {
+  .menu-fab {
+    display: none !important;
+  }
 }
 
 .hero {
@@ -813,6 +875,45 @@ th {
   .app-shell {
     width: min(1160px, 100% - 1rem);
     padding-top: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell > :not(.page-menu):not(.menu-fab) {
+    grid-column: auto;
+  }
+
+  .page-menu {
+    position: static;
+    width: 100%;
+    border-radius: 12px;
+    backdrop-filter: none;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .page-menu ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .menu-fab {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 0.85rem;
+    bottom: calc(0.85rem + env(safe-area-inset-bottom));
+    width: 2.55rem;
+    height: 2.55rem;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.22rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: var(--shadow);
+    z-index: 1000;
   }
 
   .form-grid {
@@ -847,6 +948,10 @@ th {
 
   .scpi-portfolio-line,
   .scpi-db-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-menu ul {
     grid-template-columns: 1fr;
   }
 }
