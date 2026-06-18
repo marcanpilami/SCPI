@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { INPUT_LIMITS } from '../config/constants'
 import { formatNumberInput } from '../lib/format'
 import { ScpiPortfolioPanel } from './ScpiPortfolioPanel'
@@ -40,6 +40,10 @@ function NumberField({
   disabled?: boolean
 }) {
   const [valueAsString, setValueAsString] = useState(formatNumberInput(value, value.toString(), step))
+ 
+  useEffect(() => {
+    setValueAsString(formatNumberInput(value, value.toString(), step))
+  }, [value, step])
 
   const handleChangeInternal = (event : React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value

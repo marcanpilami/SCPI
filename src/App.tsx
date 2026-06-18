@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { LoanModeComparison } from './components/LoanModeComparison'
 import { ScpiParameterComparison } from './components/ScpiParameterComparison'
 import { ScenarioComparison } from './components/ScenarioComparison'
 import { ProjectionChart } from './components/ProjectionChart'
@@ -418,11 +417,7 @@ function App() {
         showDetailed={showDetailed}
         onToggleDetailed={setShowDetailed}
         onExportCsv={handleExportCsv}
-      />
-      <LoanModeComparison
-        withLoan={withLoanSimulation}
-        withoutLoan={withoutLoanSimulation}
-      />
+      />      
       <YearlyTaxResultTable
         rows={simulation.yearlyResults}
       />      
