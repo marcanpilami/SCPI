@@ -200,18 +200,6 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
     const yearlyTotalTaxesPaidWithoutScpi = taxSimulationWithoutScpi.totalTaxesPaid + 0; // 0 Social taxes.
     const scpiTaxesPaid = yearlyTotalTaxesPaid - yearlyTotalTaxesPaidWithoutScpi; // total fiscal impact of SCPI.
     const scpiAverageTaxRate = scpiTaxesPaid / grossRents;
-
-    // Comparison with taxes with all SCPI in France
-    const fullFrenchScenarioTaxableLandRevenue = grossRents - loan.interestPaid - loan.insurancePaid;
-    const fullFrenchScenarioTaxableIncome =
-      fullFrenchScenarioTaxableLandRevenue +
-      input.nonScpiRevenues -
-      input.nonScpiTaxDeductions      ;
-    const fullFrenchScenarioTaxSimulation = taxSimulation(fullFrenchScenarioTaxableIncome);
-    const scpiFullFrenchScenarioTotalTaxes = fullFrenchScenarioTaxSimulation.totalTaxesPaid + fullFrenchScenarioTaxableLandRevenue * SOCIAL_CONTRIBUTIONS_RATE;
-    const scpiFullFrenchScenarioFiscalImpact = scpiFullFrenchScenarioTotalTaxes - yearlyTotalTaxesPaid;
-    const scpiFullFrenchScenarioAverageTaxRate = scpiFullFrenchScenarioTotalTaxes / worldGrossIncome;
-    const scpiFullFrenchScenarioAverageScpiTaxRate = (scpiFullFrenchScenarioTotalTaxes - yearlyTotalTaxesPaidWithoutScpi) / grossRents;
     
     // Effort
      const bankReimbursementTotal = loan.capitalPaid + loan.interestPaid;
@@ -283,10 +271,6 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
       franceTheoreticalAverageIncomeTaxRate,
       franceAverageIncomeTaxRate,
       scpiAverageTaxRate,
-      scpiFullFrenchScenarioTotalTaxes,
-      scpiFullFrenchScenarioFiscalImpact,
-      scpiFullFrenchScenarioAverageTaxRate,
-      scpiFullFrenchScenarioAverageScpiTaxRate,
     });
 
     assetValueStartOfYear = endOfYearFixedAssetsValuation

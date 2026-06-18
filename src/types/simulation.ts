@@ -96,11 +96,7 @@ export interface YearlyResult {
   theoreticalTaxesOnWorldInFrance: number;
   allIncomeTaxesPaidInFrance: number;
   socialContributionsFrance: number;
-  frenchTaxCreditToRemoveDoubleTaxes: number;
-  scpiFullFrenchScenarioTotalTaxes: number;
-  scpiFullFrenchScenarioFiscalImpact: number;
-  scpiFullFrenchScenarioAverageTaxRate: number;
-  scpiFullFrenchScenarioAverageScpiTaxRate: number;
+  frenchTaxCreditToRemoveDoubleTaxes: number; 
   yearlyTotalTaxesPaid: number;
   franceTheoreticalAverageIncomeTaxRate: number;
   franceAverageIncomeTaxRate: number;
