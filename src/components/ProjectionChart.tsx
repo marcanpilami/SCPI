@@ -37,38 +37,37 @@ export function ProjectionChart({ rows }: ProjectionChartProps) {
   const count = rows.length
   const stepX = count > 1 ? chartInnerWidth / (count - 1) : 0
 
-  const leftMax = Math.max(
+  const leftRawMax = Math.max(
     1,
     ...rows.map((row) => Math.max(row.loanRemainingCapital, row.endOfYearFixedAssetsValuation, row.endofYearLatentProfit)),
   )
-  const leftMin = Math.min(0, ...rows.map((row) => row.endofYearLatentProfit))
+  const leftRawMin = Math.min(0, ...rows.map((row) => row.endofYearLatentProfit))
+  const leftAbsMax = Math.max(leftRawMax, Math.abs(leftRawMin))
+  const leftMax = leftAbsMax
+  const leftMin = -leftAbsMax
 
   const invertedEfforts = rows.map((row) => -row.effortAmount)
-  const effortMin = Math.min(0, ...invertedEfforts) * 1.3
-  const effortMax = Math.max(0, ...invertedEfforts) * 1.3
+  const effortRawMin = Math.min(0, ...invertedEfforts) * 1.3
+  const effortRawMax = Math.max(0, ...invertedEfforts) * 1.3
+  const effortAbsMax = Math.max(Math.abs(effortRawMin), Math.abs(effortRawMax), 1)
+  const effortMax = effortAbsMax
+  const effortMin = -effortAbsMax
 
-  const leftRange = leftMax - leftMin || 1
-  const leftNegativeShare = leftMin < 0 ? Math.abs(leftMin) / leftRange : 0
-  const rightRange = effortMax - effortMin || 1
-  const rightNegativeShare = effortMin < 0 ? Math.abs(effortMin) / rightRange : 0
-  const negativeShare = Math.max(leftNegativeShare, rightNegativeShare)
-
-  const zeroY = MARGIN.top + chartInnerHeight * (1 - negativeShare)
-  const topSpan = Math.max(1, zeroY - MARGIN.top)
-  const bottomSpan = Math.max(1, MARGIN.top + chartInnerHeight - zeroY)
+  const zeroY = MARGIN.top + chartInnerHeight / 2
+  const halfSpan = Math.max(1, chartInnerHeight / 2)
 
   const leftY = (value: number) => {
     if (value >= 0) {
-      return zeroY - (value / (leftMax || 1)) * topSpan
+      return zeroY - (value / (leftMax || 1)) * halfSpan
     }
-    return zeroY + (Math.abs(value) / (Math.abs(leftMin) || 1)) * bottomSpan
+    return zeroY + (Math.abs(value) / (Math.abs(leftMin) || 1)) * halfSpan
   }
 
   const rightY = (value: number) => {
     if (value >= 0) {
-      return zeroY - (value / (effortMax || 1)) * topSpan
+      return zeroY - (value / (effortMax || 1)) * halfSpan
     }
-    return zeroY + (Math.abs(value) / (Math.abs(effortMin) || 1)) * bottomSpan
+    return zeroY + (Math.abs(value) / (Math.abs(effortMin) || 1)) * halfSpan
   }
 
   const band = count > 1 ? stepX : chartInnerWidth
