@@ -104,7 +104,7 @@ export function SummaryComparisonRows<TScenario extends { id: string }>({
     {
       key: 'totalTaxes',
       label: 'Impôts payés',
-      subtitle: `Cumul sur ${simulatedYearsLabel} ans, dont taxes sociales`,
+      subtitle: `Cumul sur ${simulatedYearsLabel} ans`,
       getValue: (entry) => entry.output.summary.totalTaxes,
       formatValue: formatEuro,
       showRank: true,
@@ -113,7 +113,7 @@ export function SummaryComparisonRows<TScenario extends { id: string }>({
     {
       key: 'overallRentTaxRate',
       label: "Taux d'imposition moyen des loyers",
-      subtitle: `Moyenne sur ${simulatedYearsLabel} ans, dont taxes sociales`,
+      subtitle: `Moyenne sur ${simulatedYearsLabel} ans`,
       getValue: (entry) => entry.output.summary.overallRentTaxRate,
       formatValue: formatPercent,
       showRank: true,

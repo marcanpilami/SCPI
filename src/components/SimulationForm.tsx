@@ -96,7 +96,6 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
         <div>
           <h2>Paramètres de simulation</h2>
           <p className="panel-subtitle">
-            Tous les calculs sont annuels et affichés en euros constants.
           </p>
         </div>
         {onReset && (
@@ -130,7 +129,7 @@ export function SimulationForm({ input, onChange, onReset }: SimulationFormProps
 
             <NumberField
               id="otherInitialExpenses"
-              label="Autres frais initiaux"
+              label="Frais initiaux"
               value={input.otherInitialExpenses}
               min={INPUT_LIMITS.otherInitialExpenses.min}
               max={INPUT_LIMITS.otherInitialExpenses.max}

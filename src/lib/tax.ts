@@ -21,7 +21,7 @@ export function taxSimulation(taxable_income: number): TaxResult {
     }
 
     return {
-      averageTaxRate: total_tax / taxable_income,
+      averageTaxRate: taxable_income > 0 ? total_tax / taxable_income : 0,
       totalTaxesPaid: total_tax,
       brackets,
     };
