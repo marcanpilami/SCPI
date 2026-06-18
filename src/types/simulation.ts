@@ -27,6 +27,15 @@ export interface LoanScenario {
   loanAnnualInsuranceRate: number
 }
 
+export interface ScpiParameterScenario {
+  id: string
+  name: string
+  editable: boolean
+  subscriptionFeeRate: number
+  distributionRate: number
+  revenueInFranceRate: number
+}
+
 export interface ScpiDatabaseEntry {
   id: string
   name: string

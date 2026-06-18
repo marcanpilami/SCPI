@@ -1,13 +1,13 @@
 import { INPUT_LIMITS } from '../config/constants'
-import { formatEuro, formatPercent } from '../lib/format'
+import { formatPercent } from '../lib/format'
 import { SummaryComparisonRows } from './SummaryComparisonRows'
-import type { LoanScenario, SimulationOutput } from '../types/simulation'
+import type { ScpiParameterScenario, SimulationOutput } from '../types/simulation'
 
-interface ScenarioComparisonProps {
-  scenarios: LoanScenario[]
-  outputs: Array<{ scenario: LoanScenario; output: SimulationOutput }>
+interface ScpiParameterComparisonProps {
+  scenarios: ScpiParameterScenario[]
+  outputs: Array<{ scenario: ScpiParameterScenario; output: SimulationOutput }>
   onAddFromCurrent: () => void
-  onUpdateScenario: (id: string, patch: Partial<LoanScenario>) => void
+  onUpdateScenario: (id: string, patch: Partial<ScpiParameterScenario>) => void
   onRemoveScenario: (id: string) => void
 }
 
@@ -19,14 +19,13 @@ function fromPercent(value: number): number {
   return value / 100
 }
 
-
-export function ScenarioComparison({
+export function ScpiParameterComparison({
   scenarios,
   outputs,
   onAddFromCurrent,
   onUpdateScenario,
   onRemoveScenario,
-}: ScenarioComparisonProps) {
+}: ScpiParameterComparisonProps) {
   const simulatedYears = outputs[0]?.output.yearlyResults.length
   const simulatedYearsLabel = simulatedYears ?? '-'
 
@@ -34,10 +33,9 @@ export function ScenarioComparison({
     <section className="panel">
       <div className="panel-head">
         <div>
-          <h2>Comparaison de plusieurs scénarios d'emprunt</h2>
+          <h2>Comparaison de scénarios SCPI (prêt constant)</h2>
           <p className="panel-subtitle">
-            Tous les scénarios ci-dessous diffèrent par les caractéristiques de leur prêt et partagent les autres
-            paramètres du formulaire principal.
+            Le prêt reste identique au scénario principal. Seuls les frais de souscription, le taux de distribution et la part de revenus en France changent.
           </p>
         </div>
         <button type="button" className="btn" onClick={onAddFromCurrent}>
@@ -86,103 +84,75 @@ export function ScenarioComparison({
           </thead>
           <tbody>
             <tr>
-              <td>Apport (EUR)</td>
+              <td>Frais de souscription (%)</td>
               {outputs.map((scenarioOutput) => (
-                <td key={`down-payment-${scenarioOutput.scenario.id}`}>
+                <td key={`subscription-fee-${scenarioOutput.scenario.id}`}>
                   {scenarioOutput.scenario.editable ? (
                     <input
                       className="scenario-cell-input"
                       type="number"
-                      min={INPUT_LIMITS.downPaymentAmount.min}
-                      max={INPUT_LIMITS.downPaymentAmount.max}
-                      step={500}
-                      value={scenarioOutput.scenario.downPaymentAmount}
-                      onChange={(event) =>
-                        onUpdateScenario(scenarioOutput.scenario.id, {
-                          downPaymentAmount: Number(event.target.value),
-                        })
-                      }
-                    />
-                  ) : (
-                    <span>{formatEuro(scenarioOutput.scenario.downPaymentAmount)}</span>
-                  )}
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td>Durée (ans)</td>
-              {outputs.map((scenarioOutput) => (
-                <td key={`duration-${scenarioOutput.scenario.id}`}>
-                  {scenarioOutput.scenario.editable ? (
-                    <input
-                      className="scenario-cell-input"
-                      type="number"
-                      min={INPUT_LIMITS.loanDurationYears.min}
-                      max={INPUT_LIMITS.loanDurationYears.max}
-                      value={scenarioOutput.scenario.loanDurationYears}
-                      onChange={(event) =>
-                        onUpdateScenario(scenarioOutput.scenario.id, {
-                          loanDurationYears: Number(event.target.value),
-                        })
-                      }
-                    />
-                  ) : (
-                    <span>{`${scenarioOutput.scenario.loanDurationYears} ans`}</span>
-                  )}
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td>Taux prêt (%)</td>
-              {outputs.map((scenarioOutput) => (
-                <td key={`loan-rate-${scenarioOutput.scenario.id}`}>
-                  {scenarioOutput.scenario.editable ? (
-                    <input
-                      className="scenario-cell-input"
-                      type="number"
-                      min={INPUT_LIMITS.loanAnnualRate.min * 100}
-                      max={INPUT_LIMITS.loanAnnualRate.max * 100}
+                      min={INPUT_LIMITS.subscriptionFeeRate.min * 100}
+                      max={INPUT_LIMITS.subscriptionFeeRate.max * 100}
                       step={0.01}
-                      value={asPercent(scenarioOutput.scenario.loanAnnualRate)}
+                      value={asPercent(scenarioOutput.scenario.subscriptionFeeRate)}
                       onChange={(event) =>
                         onUpdateScenario(scenarioOutput.scenario.id, {
-                          loanAnnualRate: fromPercent(Number(event.target.value)),
+                          subscriptionFeeRate: fromPercent(Number(event.target.value)),
                         })
                       }
                     />
                   ) : (
-                    <span>{formatPercent(scenarioOutput.scenario.loanAnnualRate)}</span>
+                    <span>{formatPercent(scenarioOutput.scenario.subscriptionFeeRate)}</span>
                   )}
                 </td>
               ))}
             </tr>
 
             <tr>
-              <td>Taux assurance (%)</td>
+              <td>Taux de distribution (%)</td>
               {outputs.map((scenarioOutput) => (
-                <td key={`insurance-rate-${scenarioOutput.scenario.id}`}>
+                <td key={`distribution-rate-${scenarioOutput.scenario.id}`}>
                   {scenarioOutput.scenario.editable ? (
                     <input
                       className="scenario-cell-input"
                       type="number"
-                      min={INPUT_LIMITS.loanAnnualInsuranceRate.min * 100}
-                      max={INPUT_LIMITS.loanAnnualInsuranceRate.max * 100}
+                      min={INPUT_LIMITS.distributionRate.min * 100}
+                      max={INPUT_LIMITS.distributionRate.max * 100}
                       step={0.01}
-                      value={asPercent(scenarioOutput.scenario.loanAnnualInsuranceRate)}
+                      value={asPercent(scenarioOutput.scenario.distributionRate)}
                       onChange={(event) =>
                         onUpdateScenario(scenarioOutput.scenario.id, {
-                          loanAnnualInsuranceRate: fromPercent(
-                            Number(event.target.value),
-                          ),
+                          distributionRate: fromPercent(Number(event.target.value)),
                         })
                       }
                     />
                   ) : (
-                    <span>
-                      {formatPercent(scenarioOutput.scenario.loanAnnualInsuranceRate)}
-                    </span>
+                    <span>{formatPercent(scenarioOutput.scenario.distributionRate)}</span>
+                  )}
+                </td>
+              ))}
+            </tr>
+
+            <tr>
+              <td>Revenus en France (%)</td>
+              {outputs.map((scenarioOutput) => (
+                <td key={`france-share-${scenarioOutput.scenario.id}`}>
+                  {scenarioOutput.scenario.editable ? (
+                    <input
+                      className="scenario-cell-input"
+                      type="number"
+                      min={INPUT_LIMITS.revenueInFranceRate.min * 100}
+                      max={INPUT_LIMITS.revenueInFranceRate.max * 100}
+                      step={0.01}
+                      value={asPercent(scenarioOutput.scenario.revenueInFranceRate)}
+                      onChange={(event) =>
+                        onUpdateScenario(scenarioOutput.scenario.id, {
+                          revenueInFranceRate: fromPercent(Number(event.target.value)),
+                        })
+                      }
+                    />
+                  ) : (
+                    <span>{formatPercent(scenarioOutput.scenario.revenueInFranceRate)}</span>
                   )}
                 </td>
               ))}

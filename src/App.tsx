@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { LoanModeComparison } from './components/LoanModeComparison'
+import { ScpiParameterComparison } from './components/ScpiParameterComparison'
 import { ScenarioComparison } from './components/ScenarioComparison'
 import { ProjectionChart } from './components/ProjectionChart'
 import { SimulationForm } from './components/SimulationForm'
@@ -8,14 +9,20 @@ import { YearlyResultsTable } from './components/YearlyResultsTable'
 import { YearlyTaxResultTable } from './components/YearlyTaxResultTable'
 import {
   DEFAULT_LOAN_SCENARIOS,
+  DEFAULT_SCPI_PARAMETER_SCENARIOS,
   DEFAULT_SIMULATION_INPUT,
 } from './config/constants'
 import { buildYearlyResultsCsv, downloadCsv } from './lib/csv'
 import { simulateScpiInvestment } from './lib/scpiSimulation'
-import type { LoanScenario, SimulationInput } from './types/simulation'
+import type {
+  LoanScenario,
+  ScpiParameterScenario,
+  SimulationInput,
+} from './types/simulation'
 
 const STORAGE_KEY_SIMULATION_INPUT = 'scpi:simulation-input'
 const STORAGE_KEY_LOAN_SCENARIOS = 'scpi:loan-scenarios'
+const STORAGE_KEY_SCPI_PARAMETER_SCENARIOS = 'scpi:scpi-parameter-scenarios'
 
 function readPersistedSimulationInput(): SimulationInput {
   if (typeof window === 'undefined') {
@@ -64,6 +71,28 @@ function readPersistedLoanScenarios(): LoanScenario[] {
   }
 }
 
+function readPersistedScpiParameterScenarios(): ScpiParameterScenario[] {
+  if (typeof window === 'undefined') {
+    return DEFAULT_SCPI_PARAMETER_SCENARIOS
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_SCPI_PARAMETER_SCENARIOS)
+    if (!raw) {
+      return DEFAULT_SCPI_PARAMETER_SCENARIOS
+    }
+
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return DEFAULT_SCPI_PARAMETER_SCENARIOS
+    }
+
+    return parsed as ScpiParameterScenario[]
+  } catch {
+    return DEFAULT_SCPI_PARAMETER_SCENARIOS
+  }
+}
+
 function App() {
   const [input, setInput] = useState<SimulationInput>(() =>
     readPersistedSimulationInput(),
@@ -74,6 +103,9 @@ function App() {
   const [loanScenarios, setLoanScenarios] = useState<LoanScenario[]>(() =>
     readPersistedLoanScenarios(),
   )
+  const [scpiParameterScenarios, setScpiParameterScenarios] = useState<
+    ScpiParameterScenario[]
+  >(() => readPersistedScpiParameterScenarios())
 
   const withLoanSimulation = useMemo(
     () => simulateScpiInvestment({ ...input, useLoan: true }),
@@ -81,6 +113,14 @@ function App() {
   )
   const withoutLoanSimulation = useMemo(
     () => simulateScpiInvestment({ ...input, useLoan: false }),
+    [input],
+  )
+  const withoutForeignScpiSimulation = useMemo(
+    () => simulateScpiInvestment({ ...input, revenueInFranceRate: 1 }),
+    [input],
+  )
+  const withoutFranceScpiSimulation = useMemo(
+    () => simulateScpiInvestment({ ...input, revenueInFranceRate: 0 }),
     [input],
   )
   const simulation = useMemo(
@@ -130,6 +170,54 @@ function App() {
     [input, loanScenarios, simulation, withoutLoanSimulation],
   )
 
+  const scpiParameterOutputs = useMemo(
+    () => [
+      {
+        scenario: {
+          id: 'scpi-main',
+          name: 'Scénario principal',
+          editable: false,
+          subscriptionFeeRate: input.subscriptionFeeRate,
+          distributionRate: input.distributionRate,
+          revenueInFranceRate: input.revenueInFranceRate,
+        },
+        output: simulation,
+      },
+      {
+        scenario: {
+          id: 'scpi-no-europe',
+          name: 'Sans SCPI étrangère',
+          editable: false,
+          subscriptionFeeRate: input.subscriptionFeeRate,
+          distributionRate: input.distributionRate,
+          revenueInFranceRate: 1,
+        },
+        output: withoutForeignScpiSimulation,
+      },
+      {
+        scenario: {
+          id: 'scpi-no-france',
+          name: 'Sans SCPI française',
+          editable: false,
+          subscriptionFeeRate: input.subscriptionFeeRate,
+          distributionRate: input.distributionRate,
+          revenueInFranceRate: 0,
+        },
+        output: withoutFranceScpiSimulation,
+      },
+      ...scpiParameterScenarios.map((scenario) => ({
+        scenario,
+        output: simulateScpiInvestment({
+          ...input,
+          subscriptionFeeRate: scenario.subscriptionFeeRate,
+          distributionRate: scenario.distributionRate,
+          revenueInFranceRate: scenario.revenueInFranceRate,
+        }),
+      })),
+    ],
+    [input, scpiParameterScenarios, simulation, withoutForeignScpiSimulation, withoutFranceScpiSimulation],
+  )
+
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY_SIMULATION_INPUT, JSON.stringify(input))
@@ -145,6 +233,17 @@ function App() {
       // Ignore persistence issues
     }
   }, [loanScenarios])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY_SCPI_PARAMETER_SCENARIOS,
+        JSON.stringify(scpiParameterScenarios),
+      )
+    } catch {
+      // Ignore persistence issues
+    }
+  }, [scpiParameterScenarios])
 
   function handleExportCsv(): void {
     const csv = buildYearlyResultsCsv(simulation.yearlyResults)
@@ -181,12 +280,46 @@ function App() {
     )
   }
 
+  function handleAddNewScpiParameterScenario(): void {
+    const nextIndex = scpiParameterScenarios.length + 1
+    setScpiParameterScenarios((current) => [
+      ...current,
+      {
+        id: `scpi-params-${Date.now()}-${nextIndex}`,
+        name: `Scénario ${nextIndex}`,
+        editable: true,
+        subscriptionFeeRate: input.subscriptionFeeRate,
+        distributionRate: input.distributionRate,
+        revenueInFranceRate: input.revenueInFranceRate,
+      },
+    ])
+  }
+
+  function handleUpdateScpiParameterScenario(
+    id: string,
+    patch: Partial<ScpiParameterScenario>,
+  ): void {
+    setScpiParameterScenarios((current) =>
+      current.map((scenario) =>
+        scenario.id === id ? { ...scenario, ...patch } : scenario,
+      ),
+    )
+  }
+
+  function handleRemoveScpiParameterScenario(id: string): void {
+    setScpiParameterScenarios((current) =>
+      current.filter((scenario) => !(scenario.id === id && scenario.editable)),
+    )
+  }
+
   function handleResetInput(): void {
     setInput(DEFAULT_SIMULATION_INPUT)
     setLoanScenarios(DEFAULT_LOAN_SCENARIOS)
+    setScpiParameterScenarios(DEFAULT_SCPI_PARAMETER_SCENARIOS)
     try {
       window.localStorage.removeItem(STORAGE_KEY_SIMULATION_INPUT)
       window.localStorage.removeItem(STORAGE_KEY_LOAN_SCENARIOS)
+      window.localStorage.removeItem(STORAGE_KEY_SCPI_PARAMETER_SCENARIOS)
     } catch {
       // Ignore persistence issues
     }
@@ -273,6 +406,13 @@ function App() {
         onUpdateScenario={handleUpdateScenario}
         onRemoveScenario={handleRemoveScenario}
       />
+      <ScpiParameterComparison
+        scenarios={scpiParameterScenarios}
+        outputs={scpiParameterOutputs}
+        onAddFromCurrent={handleAddNewScpiParameterScenario}
+        onUpdateScenario={handleUpdateScpiParameterScenario}
+        onRemoveScenario={handleRemoveScpiParameterScenario}
+      />
       <YearlyResultsTable
         rows={simulation.yearlyResults}
         showDetailed={showDetailed}
@@ -285,7 +425,7 @@ function App() {
       />
       <YearlyTaxResultTable
         rows={simulation.yearlyResults}
-      />
+      />      
     </main>
   )
 }

@@ -1,4 +1,9 @@
-import type { LoanScenario, ScpiDatabaseEntry, SimulationInput } from '../types/simulation'
+import type {
+  LoanScenario,
+  ScpiDatabaseEntry,
+  ScpiParameterScenario,
+  SimulationInput,
+} from '../types/simulation'
 
 export const MONTHS_IN_YEAR = 12
 export const SOCIAL_CONTRIBUTIONS_RATE = 0.186
@@ -69,6 +74,8 @@ export const DEFAULT_LOAN_SCENARIOS: LoanScenario[] = [
     loanAnnualInsuranceRate: 0.003,
   },
 ];
+
+export const DEFAULT_SCPI_PARAMETER_SCENARIOS: ScpiParameterScenario[] = []
 
 export const FRENCH_TAX_BRACKETS = [
   { rate: 0.11, threshold: 29579 },
