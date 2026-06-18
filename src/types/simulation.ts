@@ -119,6 +119,7 @@ export interface SimulationSummary {
   finalCapitalLatentGain: number;
   overallYearlyYield: number;
   overallYearlyYieldWithLatentGains: number;
+  overallRentTaxRate: number;
   leverageRatio: number;
 }
 

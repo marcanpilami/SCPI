@@ -312,6 +312,7 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
       yieldAtEndOfSimulation: 0,
       overallYearlyYield: 0,
       overallYearlyYieldWithLatentGains: 0,
+      overallRentTaxRate: 0,
     },
   );
 
@@ -337,6 +338,8 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
   summary.overallYearlyYield = summary.finalCashValue / (summary.totalOutOfPocket * yearlyResults.length);
   summary.overallYearlyYieldWithLatentGains = summary.finalLatentProfit / (summary.totalOutOfPocket * yearlyResults.length);
 
+  summary.overallRentTaxRate = summary.totalTaxes / summary.totalRents;
+  
   return {
     yearlyResults,
     summary,
