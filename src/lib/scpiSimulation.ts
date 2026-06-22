@@ -192,6 +192,10 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
 
     const yearlyTotalTaxesPaid = allIncomeTaxesPaidInFrance + scpiTaxesPaidAbroad + socialContributionsFrance;
     const worldAverageTaxRate = yearlyTotalTaxesPaid / worldGrossIncome;
+
+    const yearlyTotalTaxesPaidOnScpi =
+      scpiTaxesPaidAbroad +
+      fiscalLandRevenueInFrance * (franceAverageIncomeTaxRate + SOCIAL_CONTRIBUTIONS_RATE) ;
     
     // Comparison with taxes without SCPIs
     const taxSimulationWithoutScpi = taxSimulation(
@@ -237,6 +241,7 @@ export function simulateScpiInvestment(rawInput: SimulationInput): SimulationOut
       annualYield,
       scpiTaxesPaidAbroad,
       scpiTaxesPaid,
+      yearlyTotalTaxesPaidOnScpi,
       bankCapitalRepaid: loan.capitalPaid,
       bankInterestPaid: loan.interestPaid,
       bankReimbursementTotal,

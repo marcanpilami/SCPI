@@ -96,7 +96,8 @@ export interface YearlyResult {
   theoreticalTaxesOnWorldInFrance: number;
   allIncomeTaxesPaidInFrance: number;
   socialContributionsFrance: number;
-  frenchTaxCreditToRemoveDoubleTaxes: number; 
+  frenchTaxCreditToRemoveDoubleTaxes: number;
+  yearlyTotalTaxesPaidOnScpi: number;
   yearlyTotalTaxesPaid: number;
   franceTheoreticalAverageIncomeTaxRate: number;
   franceAverageIncomeTaxRate: number;
@@ -130,6 +131,7 @@ export interface SimulationOutput {
 
 export interface TaxResult {
   averageTaxRate: number;
+  marginalRate: number;
   totalTaxesPaid: number;
   brackets: TaxBracketResult[];
 }

@@ -17,7 +17,7 @@ export function YearlyTaxResultTable({
         <div>
           <h2>Projection fiscale annuelle</h2>
           <p className="panel-subtitle">
-            Vue synthétique par défaut, avec mode audit pour le détail des flux fiscaux.
+            L'impact fiscal est ici calculé étape par étape (cf. mode audit détaillé). C'est la différence entre la situation avant et après SCPI, comprenant à la fois l'impôt sur les loyers des SCPI et les modifications de taux effectif sur le reste du revenu imposable. 
           </p>
         </div>
         <div className="panel-actions">
@@ -79,6 +79,7 @@ export function YearlyTaxResultTable({
               {showAudit && <th>Impôts à l'étranger</th>}
               
               <th>Impôts totaux</th>
+              <th>Dont sur SCPI</th>
               <th>Impact fiscal SCPI</th>
             </tr>
           </thead>
@@ -136,7 +137,9 @@ export function YearlyTaxResultTable({
                 {showAudit && <td>{formatEuro(row.socialContributionsFrance)}</td>}
                 {showAudit && <td>{formatEuro(row.scpiTaxesPaidAbroad)}</td>}
                 <td>{formatEuro(row.yearlyTotalTaxesPaid)}
-                  <span className="subcell">TE {formatPercent(row.worldAverageTaxRate)}</span>                  
+                  <span className="subcell">TE {formatPercent(row.worldAverageTaxRate)}</span>
+                </td>
+                <td>{formatEuro(row.yearlyTotalTaxesPaidOnScpi)}
                 </td>
                 <td>
                   <strong>{formatEuro(row.scpiTaxesPaid)}</strong>

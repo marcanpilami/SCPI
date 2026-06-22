@@ -24,5 +24,6 @@ export function taxSimulation(taxable_income: number): TaxResult {
       averageTaxRate: taxable_income > 0 ? total_tax / taxable_income : 0,
       totalTaxesPaid: total_tax,
       brackets,
+      marginalRate: Math.max(...brackets.map(b => b.bracketRate), 0),
     };
 }
