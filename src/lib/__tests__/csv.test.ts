@@ -43,6 +43,7 @@ function makeYearlyResult(overrides: Partial<YearlyResult> = {}): YearlyResult {
     yearlyTotalTaxesPaid: 2140,
     franceTheoreticalAverageIncomeTaxRate: 0.22,
     franceAverageIncomeTaxRate: 0.21,
+    yearlyTotalTaxesPaidOnScpi: 340,
     ...overrides,
   }
 }
